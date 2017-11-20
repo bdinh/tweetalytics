@@ -10,9 +10,12 @@ import { bindAll } from 'lodash';
 import { scaleBand, scaleLinear, max, select, selectAll,
     axisBottom, axisLeft, tickValues, scaleOrdinal,
     rgb, schemeCategory20, entries, scalePow, forceSimulation,
-    forceX, forceY, forceManyBody, keys } from 'd3';
+    forceX, forceY, forceManyBody, keys, classed, event, json } from 'd3';
+import "./tooltip";
 import { Tweet } from 'react-twitter-widgets';
 import { slick } from 'slick-carousel';
+import {floatingTooltip} from "./tooltip";
+import './widget';
 
 let sentiment = require("sentiment");
 
@@ -23,7 +26,7 @@ class App extends Component {
         this.state = {
             sentimentData: null,
             visualizationData: null,
-            tweetHTML: [],
+            tweetHTML: null,
         };
 
         bindAll(this, [
@@ -36,51 +39,94 @@ class App extends Component {
 
     sentimentAnalysis() {
         let data = this.state.sentimentData;
-        // console.log(data);
+        console.log(this.state);
+
 
         // Retrieves the array of sentiment data returned from the sentiment function
         let sentimentArray = data.map((d) => {
-             return sentiment(d)
+             return sentiment(d.text)
         });
 
-        console.log(sentimentArray);
+        let test = data.map((d) => {
+            return {
+                text: d.text,
+                sentimentObject: sentiment(d.text),
+                tweetID: d.tweetID
+            }
+        });
+
 
         // Combine the positive words into one array
         let postiveWords = sentimentArray.reduce((total, next) => {
             return total.concat(next.positive);
         }, []);
 
-        console.log(postiveWords);
+
+        let positiveTest = [];
+
+        test.forEach((tweet) => {
+            let tweetID = tweet.tweetID;
+            let text = tweet.text;
+            tweet.sentimentObject.positive.forEach((word) => {
+                positiveTest.push({
+                    word: word,
+                    tweetID: tweetID,
+                    text: text
+                });
+            });
+        });
+
+
+
+
+        let negativeTest = [];
+
+        test.forEach((tweet) => {
+            let tweetID = tweet.tweetID;
+            let text = tweet.text;
+            tweet.sentimentObject.negative.forEach((word) => {
+                negativeTest.push({
+                    word: word,
+                    tweetID: tweetID,
+                    text: text
+                });
+            });
+        });
+
+        console.log(positiveTest);
+
 
         // Combine the negative words into one array
         let negativeWords = sentimentArray.reduce((total, next) => {
             return total.concat(next.negative);
         }, []);
 
-        console.log(negativeWords);
-
 
         let wordCount = {};
 
         // Get a word count for each word
-        postiveWords.map((d) => {
-            if (d in wordCount) {
-                wordCount[d].value++;
+        positiveTest.map((d) => {
+            if (d.word in wordCount) {
+                wordCount[d.word].value++;
             } else {
-                wordCount[d] = {
-                    name: d,
+                wordCount[d.word] = {
+                    name: d.word,
+                    text: d.text,
+                    tweetID: d.tweetID,
                     value: 1,
                     type: "Positive"
                 };
             }
         });
 
-        negativeWords.map((d) => {
-            if (d in wordCount) {
-                wordCount[d].value++;
+        negativeTest.map((d) => {
+            if (d.word in wordCount) {
+                wordCount[d.word].value++;
             } else {
-                wordCount[d] = {
-                    name: d,
+                wordCount[d.word] = {
+                    name: d.word,
+                    text: d.text,
+                    tweetID: d.tweetID,
                     value: 1,
                     type: "Negative"
                 };
@@ -95,36 +141,12 @@ class App extends Component {
             resultData.push(insertObj);
         });
 
-        console.log(wordCount)
-
-        console.log(resultData);
-
-
-        // let allWords = sentimentArray.reduce((total, next) => {
-        //     return total.concat(next.tokens)
-        // }, []);
-        //
-        // console.log(allWords);
-
-
-        // let allWordCount = {};
-        //
-        // allWords.map((d) => {
-        //     if (d in allWordCount) {
-        //         allWordCount[d]++;
-        //     } else {
-        //         allWordCount[d] = 1;
-        //     }
-        // });
-        //
-        // console.log(allWordCount);
-
-
+        // Calculates the Sentiment Score
         let sentimentScore = sentimentArray.reduce((total, d) => {
             return total + d.score;
         }, 0);
 
-        console.log(sentimentScore);
+
 
         let wordArray = [];
         Object.keys(wordCount).forEach((word, i) => {
@@ -132,7 +154,8 @@ class App extends Component {
             wordArray.push(insertObj);
         });
 
-        this.createBubbleChart(wordArray);
+
+        this.createBubbleChart(resultData);
 
     }
 
@@ -144,8 +167,12 @@ class App extends Component {
 
         myBubbleChart('.bubble-container', data);
 
+        let testingData = this.state;
+
+
         function bubbleChart() {
             let margin = {top: 20, right: 0, bottom: 30, left: 0};
+            let tooltip = floatingTooltip('tweet_tooltip', 80);
 
             let containerWidth = parseInt(select(".bubble-container").style("width"));
             let containerHeight = parseInt(select(".bubble-container").style("height"));
@@ -162,8 +189,8 @@ class App extends Component {
             };
 
             let groupTitleX = {
-                Positive: width / 2 - quarterWidth,
-                Negative: width / 2 + quarterWidth
+                Positive: width / 2 - quarterWidth - 20,
+                Negative: width / 2 + quarterWidth + 20
             };
 
             let forceStrength = 0.03;
@@ -177,7 +204,6 @@ class App extends Component {
             function charge(d) {
                 return -Math.pow(d.radius, 2.0) * forceStrength;
             }
-
 
 
             let simulation = forceSimulation()
@@ -208,6 +234,8 @@ class App extends Component {
                 let nodes = data.map((word) => {
                     return {
                         id: word.id,
+                        tweetID: word.tweetID,
+                        text: word.text,
                         radius: radiusScale(+word.value),
                         value: +word.value,
                         name: word.name,
@@ -236,20 +264,22 @@ class App extends Component {
                     .attr('height', height);
 
                 bubbles = svg.selectAll('.bubble')
-                    .data(nodes, function (d) { return d.id; });
+                    .data(nodes, (d) => { return d.id; });
 
                 let bubblesEnter = bubbles.enter().append('circle')
                     .classed('bubble', true)
                     .attr('r', 0)
-                    .attr('fill', function (d) { return fillColor(d.group); })
-                    .attr('stroke', function (d) { return rgb(fillColor(d.group)).darker(); })
-                    .attr('stroke-width', 2);
+                    .attr('fill', (d) => { return fillColor(d.group); })
+                    .attr('stroke', (d) => { return rgb(fillColor(d.group)).darker(); })
+                    .attr('stroke-width', 2)
+                    .on('mouseover', showTooltip)
+                    .on('mouseout', hideTooltip);
 
                 bubbles = bubbles.merge(bubblesEnter);
 
                 bubbles.transition()
                     .duration(2000)
-                    .attr('r', function (d) { return d.radius; });
+                    .attr('r', (d) => { return d.radius; });
 
 
                 simulation.nodes(nodes);
@@ -259,8 +289,8 @@ class App extends Component {
 
             function ticked() {
                 bubbles
-                    .attr('cx', function (d) { return d.x; })
-                    .attr('cy', function (d) { return d.y; });
+                    .attr('cx', (d) => { return d.x; })
+                    .attr('cy', (d) => { return d.y; });
             }
 
             function nodeGroupPosition(d) {
@@ -305,8 +335,49 @@ class App extends Component {
                     .text(function (d) { return d; });
             }
 
+            function showTooltip(d) {
+                select(this).attr('stroke', 'black');
+
+                let formattedWord = d.name.charAt(0).toUpperCase() + d.name.slice(1);
+
+
+                // let html = testingData.tweetHTML[0].html;
+
+                let tooltipContent = '<span class="name">Word: </span><span class="value">' +
+                    formattedWord  + '</span><br/>' + '<span class="name">ID: </span><span class="value">' + d.tweetID;
+
+                tooltip.showTooltip(tooltipContent, event);
+
+                let htmlString = '<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Sunsets don&#39;t get much better than this one over <a href="https://twitter.com/GrandTetonNPS?ref_src=twsrc%5Etfw">@GrandTetonNPS</a>. <a href="https://twitter.com/hashtag/nature?src=hash&amp;ref_src=twsrc%5Etfw">#nature</a> <a href="https://twitter.com/hashtag/sunset?src=hash&amp;ref_src=twsrc%5Etfw">#sunset</a> <a href="http://t.co/YuKy2rcjyU">pic.twitter.com/YuKy2rcjyU</a></p>&mdash; US Department of the Interior (@Interior) <a href="https://twitter.com/Interior/status/463440424141459456?ref_src=twsrc%5Etfw">May 5, 2014</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>';
+
+                let testString = "";
+
+                let queryEmbed = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + d.tweetID;
+
+                fetch(queryEmbed)
+                    .then((response) => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                    })
+                    .then((data) => {
+                        let html = data.html;
+                        console.log(html);
+                        $('.tooltip').append(html);
+                    })
+
+
+                // $('.tooltip').append(htmlString);
+
+            }
+
+            function hideTooltip(d) {
+                select(this).attr('stroke', rgb(fillColor(d.group)).darker());
+                tooltip.hideTooltip();
+            }
+
             chart.toggleDisplay = (displayName) => {
-                if (displayName === 'separated') {
+                if (displayName === 'Separated') {
                     splitBubbles();
                 } else {
                     groupBubbles();
@@ -315,20 +386,29 @@ class App extends Component {
             return chart;
         }
 
+        setupButtons();
 
+
+        function setupButtons() {
+            $('#toolbar')
+                .children('.btn')
+                .on("click", function () {
+                    let button = $(this).children('input');
+                    let buttonValue = button.attr('value');
+                    myBubbleChart.toggleDisplay(buttonValue);
+                })
+        }
 
     }
 
-    setupButtons() {
 
-
-    }
 
 
 
     createBarChart(type) {
 
-        select("svg").remove();
+        select('.barchart-container').remove();
+
         let data =this.state.visualizationData;
 
         let margin = {top: 20, right: 0, bottom: 30, left: 40};
@@ -350,6 +430,7 @@ class App extends Component {
         let transformY = type === "Both" ? 10 : 0;
 
         let svg = select(".visualization-container").append("svg")
+            .attr('class', 'barchart-container')
             .attr("width", width + margin.right + margin.left)
             .attr("height", height + margin.bottom + margin.top)
             .append("g")
@@ -459,13 +540,40 @@ class App extends Component {
         let testSentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-sentiment-data.php";
 
         fetch(testSentimentQuery)
-            .then( (response) => { return response.json() })
-            .then( (data) => {
+            .then((response) => {
+                return response.json()
+            })
+            .then((data) => {
                 // console.log(data);
                 let parsedTweet = this.extractData(data.statuses, "sentiment");
                 this.setState({
                     sentimentData: parsedTweet
                 });
+
+                console.log(parsedTweet);
+                // this.state.tweetHTML = {};
+
+                // parsedTweet.map((tweet) => {
+                //     let embededTweetURL =
+                //         "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + "931697384278675456";
+                //     fetch(embededTweetURL)
+                //         .then((response) => {
+                //             if (response.ok) {
+                //                 return response.json();
+                //             }
+                //         })
+                //         .then((data) => {
+                //             console.log(data);
+                //             embededTweetDictionary["931697384278675456"] = data.html;
+                //         })
+                //         .catch((error) => {
+                //         });
+                // });
+
+                // this.setState({
+                //     tweetHTML: embededTweetDictionary
+                // });
+
             });
 
         let visualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=popular&count=10";
@@ -474,11 +582,17 @@ class App extends Component {
         fetch(testVisualizationQuery)
             .then( (response) => { return response.json() })
             .then( (data) => {
+                console.log(data);
                 let parsedTweet = this.extractData(data.statuses, "visualization");
                 this.setState({
-                    visualizationData: parsedTweet
+                    visualizationData: parsedTweet,
                 });
             });
+
+        // Query HTML string embed tweet
+
+
+
 
     }
 
@@ -486,10 +600,12 @@ class App extends Component {
 
         let result = [];
 
-
         if (type === "sentiment") {
             data.forEach((tweet) => {
-                result.push(tweet.text);
+                result.push({
+                    text: tweet.text,
+                    tweetID: tweet.id_str,
+                });
             });
         } else {
             data.forEach((tweet) => {
@@ -548,6 +664,7 @@ class App extends Component {
         
         if (this.state.sentimentData !== null && this.state.visualizationData !== null ) {
             this.createBarChart("Both");
+            console.log(this.state)
             this.sentimentAnalysis();
         }
         // (this.state.data !== null ? this.createBarChart("Favorites") : console.log("not yet"));
@@ -567,11 +684,9 @@ class App extends Component {
                             </div>
                             <div className="card-body tweet-here">
                                 <div className="tweet-carousel" data-slick={{slidesToShow: 2, slidesToScroll: 2}}>
-                                    <Tweet tweetId={"930184400037449729"} options={{
-                                        align: "center",
-                                        width: 250,
-                                        cards: "hidden",
-                                    }}/>
+                                    {/*<Tweet tweetId={"930184400037449729"} options={{*/}
+                                        <blockquote class="twitter-tweet" data-cards="hidden" align="center" data-width="300"><p lang="en" dir="ltr">And you get a break on your golf course too, just like Trump will. I know Lots of middle class Americans are looking forward to that</p>&mdash; Prairie Canuck (@kid_prairie) <a href="https://twitter.com/kid_prairie/status/931950137655435264?ref_src=twsrc%5Etfw">November 18, 2017</a></blockquote>
+                                        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
                                 </div>
                             </div>
                         </div>
@@ -604,15 +719,21 @@ class AnalyticPanel extends Component {
                         <div className="col-md-6 controls visual-title">
                             <p className="bold extra-ml">Word Analysis: 100 Tweets</p>
                         </div>
-                        <div className="col-md-6 controls">
-                            <RadioButton valueArray={["All", "Separated"]}/>
-
+                        <div className="col-md-6 controls bubble-button">
+                            {/*<RadioButton valueArray={["All", "Separated"]}/>*/}
+                            <div id="toolbar" className="btn-group btn-container" data-toggle="buttons">
+                                <label className="btn btn-primary small bubble-options">
+                                    <input type="radio" name="All" value="All"/> All
+                                </label>
+                                <label className="btn btn-primary small bubble-options">
+                                    <input type="radio" name="Separated" value="Separated"/> Separated
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div className="card-body bubble-container">
 
                     </div>
-
                 </div>
             </div>
         );
