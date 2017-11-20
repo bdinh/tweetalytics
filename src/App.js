@@ -9,10 +9,10 @@ import './css/font-awesome/css/font-awesome.css';
 import { bindAll } from 'lodash';
 import { scaleBand, scaleLinear, max, select, selectAll,
     axisBottom, axisLeft, tickValues, scaleOrdinal,
-    rgb, schemeCategory20, entries} from 'd3';
+    rgb, schemeCategory20, entries, scalePow, forceSimulation,
+    forceX, forceY, forceManyBody, keys } from 'd3';
 import { Tweet } from 'react-twitter-widgets';
 import { slick } from 'slick-carousel';
-import WordCloud from 'react-d3-cloud';
 
 let sentiment = require("sentiment");
 
@@ -28,10 +28,10 @@ class App extends Component {
 
         bindAll(this, [
             'createBarChart',
-            "extractData",
+            'extractData',
+            'sentimentAnalysis',
+            'createBubbleChart'
         ])
-
-
     }
 
     sentimentAnalysis() {
@@ -70,7 +70,7 @@ class App extends Component {
                 wordCount[d] = {
                     name: d,
                     value: 1,
-                    type: "positive"
+                    type: "Positive"
                 };
             }
         });
@@ -82,7 +82,7 @@ class App extends Component {
                 wordCount[d] = {
                     name: d,
                     value: 1,
-                    type: "negative"
+                    type: "Negative"
                 };
             }
         });
@@ -125,6 +125,202 @@ class App extends Component {
         }, 0);
 
         console.log(sentimentScore);
+
+        let wordArray = [];
+        Object.keys(wordCount).forEach((word, i) => {
+            let insertObj = wordCount[word];
+            wordArray.push(insertObj);
+        });
+
+        this.createBubbleChart(wordArray);
+
+    }
+
+
+
+    createBubbleChart(data) {
+
+        let myBubbleChart  = bubbleChart();
+
+        myBubbleChart('.bubble-container', data);
+
+        function bubbleChart() {
+            let margin = {top: 20, right: 0, bottom: 30, left: 0};
+
+            let containerWidth = parseInt(select(".bubble-container").style("width"));
+            let containerHeight = parseInt(select(".bubble-container").style("height"));
+
+            let width = containerWidth - margin.left - margin.right - 40;
+            let height = containerHeight - margin.top - margin.bottom - 40;
+
+            let center = { x: width / 2, y: height / 2 };
+            let quarterWidth = width / 4;
+
+            let groupCenter = {
+                Positive: { x: width / 2 - quarterWidth, y: height / 2 },
+                Negative: { x: width / 2 + quarterWidth, y: height / 2 },
+            };
+
+            let groupTitleX = {
+                Positive: width / 2 - quarterWidth,
+                Negative: width / 2 + quarterWidth
+            };
+
+            let forceStrength = 0.03;
+
+
+            let svg = null;
+            let bubbles = null;
+            let nodes = [];
+
+
+            function charge(d) {
+                return -Math.pow(d.radius, 2.0) * forceStrength;
+            }
+
+
+
+            let simulation = forceSimulation()
+                .velocityDecay(0.2)
+                .force('x', forceX().strength(forceStrength).x(center.x))
+                .force('y', forceY().strength(forceStrength).y(center.y))
+                .force('charge', forceManyBody().strength(charge))
+                .on('tick', ticked);
+
+            simulation.alphaTarget(1).restart();
+
+            simulation.stop();
+
+
+            let fillColor = scaleOrdinal()
+                .domain(['Positive', 'Negative'])
+                .range(['#1FADFF', '#FF2A1F']);
+
+            function createNodes(data) {
+
+                let scaleMax = max(data, (d) => { return +d.value; });
+
+                let radiusScale = scalePow()
+                    .exponent(0.5)
+                    .range([2, 20])
+                    .domain([0, scaleMax]);
+
+                let nodes = data.map((word) => {
+                    return {
+                        id: word.id,
+                        radius: radiusScale(+word.value),
+                        value: +word.value,
+                        name: word.name,
+                        group: word.type,
+                        x: Math.random() * 900,
+                        y: Math.random() * 800
+                    }
+                });
+
+                nodes.sort((node1, node2) => {
+                    return node2.value - node1.value;
+                });
+
+                return nodes;
+            }
+
+            let chart = () => {
+
+                nodes = createNodes(data);
+
+                console.log(nodes);
+
+                svg = select(".bubble-container")
+                    .append("svg")
+                    .attr('width', width)
+                    .attr('height', height);
+
+                bubbles = svg.selectAll('.bubble')
+                    .data(nodes, function (d) { return d.id; });
+
+                let bubblesEnter = bubbles.enter().append('circle')
+                    .classed('bubble', true)
+                    .attr('r', 0)
+                    .attr('fill', function (d) { return fillColor(d.group); })
+                    .attr('stroke', function (d) { return rgb(fillColor(d.group)).darker(); })
+                    .attr('stroke-width', 2);
+
+                bubbles = bubbles.merge(bubblesEnter);
+
+                bubbles.transition()
+                    .duration(2000)
+                    .attr('r', function (d) { return d.radius; });
+
+
+                simulation.nodes(nodes);
+
+                groupBubbles();
+            };
+
+            function ticked() {
+                bubbles
+                    .attr('cx', function (d) { return d.x; })
+                    .attr('cy', function (d) { return d.y; });
+            }
+
+            function nodeGroupPosition(d) {
+                return groupCenter[d.group].x;
+            }
+
+
+            function groupBubbles() {
+                hideGroupTitles();
+                // @v4 Reset the 'x' force to draw the bubbles to the center.
+                simulation.force('x', forceX().strength(forceStrength).x(center.x));
+
+                // @v4 We can reset the alpha value and restart the simulation
+                simulation.alpha(1).restart();
+            }
+
+            function splitBubbles() {
+
+                showGroupTitles();
+
+                // @v4 Reset the 'x' force to draw the bubbles to their year centers
+                simulation.force('x', forceX().strength(forceStrength).x(nodeGroupPosition));
+
+                // @v4 We can reset the alpha value and restart the simulation
+                simulation.alpha(1).restart();
+            }
+
+            function hideGroupTitles() {
+                svg.selectAll('.group').remove()
+            }
+
+            function showGroupTitles() {
+                let groupData = keys(groupTitleX);
+                let groups = svg.selectAll(".group")
+                    .data(groupData);
+
+                groups.enter().append("text")
+                    .attr("class", "group")
+                    .attr('x', function (d) { return groupTitleX[d]; })
+                    .attr('y', 40)
+                    .attr('text-anchor', 'middle')
+                    .text(function (d) { return d; });
+            }
+
+            chart.toggleDisplay = (displayName) => {
+                if (displayName === 'separated') {
+                    splitBubbles();
+                } else {
+                    groupBubbles();
+                }
+            };
+            return chart;
+        }
+
+
+
+    }
+
+    setupButtons() {
+
 
     }
 
@@ -359,7 +555,7 @@ class App extends Component {
         return (
 
             <div className="App container">
-                <Title color={"#0084b4"} title={"Tweetalytics"}/>
+                <Title color={"#0084b4"} fontSize={"2em"} title={"Tweetalytics"}/>
                 <SearchBar/>
                 <div className="row panel-container">
                     <AnalyticPanel headerTitle={"Sentiment Analysis"}/>
@@ -402,13 +598,21 @@ class AnalyticPanel extends Component {
             <div className="col-md-6 panel">
                 <div className="card">
                     <div className="card-header">
-                        <p className="bold">{headerTitle}</p>
+                        <Title title={headerTitle} section bold/>
                     </div>
-                    <div className="card-body">
-                        <div id="chart">
+                    <div className="visual-controls row">
+                        <div className="col-md-6 controls visual-title">
+                            <p className="bold extra-ml">Word Analysis: 100 Tweets</p>
+                        </div>
+                        <div className="col-md-6 controls">
+                            <RadioButton valueArray={["All", "Separated"]}/>
 
                         </div>
                     </div>
+                    <div className="card-body bubble-container">
+
+                    </div>
+
                 </div>
             </div>
         );
@@ -432,11 +636,11 @@ class VisualizationPanel extends Component {
             <div className="col-md-6 panel">
                 <div className="card">
                     <div className="card-header">
-                        <p className="bold">{headerTitle}</p>
+                        <Title title={headerTitle} section bold/>
                     </div>
                     <div className="visual-controls row">
                         <div className="col-md-6 controls">
-                            <p className="bold">Title</p>
+                            <p className="bold">Top 10 Tweets</p>
                         </div>
                         <div className="col-md-6 controls">
                             <RadioButton updateVisualCallback={updateVisualCallback} valueArray={["Both", "Retweets", "Favorites"]}/>
@@ -444,8 +648,6 @@ class VisualizationPanel extends Component {
                     </div>
                     <div className="card-body visualization-container">
 
-                        {/*<p className="visual-title">Hi</p>*/}
-                        {/*<svg className="visualization-canvas" width="auto" height="auto"></svg>*/}
                     </div>
                 </div>
             </div>
@@ -463,11 +665,22 @@ class Title extends Component {
     const {
         color,
         title,
+        fontSize,
+        bold,
+        section,
     } = this.props;
+
+    let styleObject = {
+        color: color ? color : "black",
+        fontSize: fontSize ? fontSize : "1em",
+        fontWeight: bold ? "bold" : "normal"
+    };
+
+    let classNames = section ? "remove-btm" : "title";
 
         return (
             <div className="container">
-                <h1 className="title" style={{color: color}}>{title}</h1>
+                <p className={classNames} style={styleObject}>{title}</p>
             </div>
         );
     }
@@ -519,7 +732,6 @@ class RadioButton extends Component {
     render() {
 
         const {
-            data,
             valueArray,
             updateVisualCallback,
         } = this.props;
