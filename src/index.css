@@ -40,6 +40,10 @@ input.form-control:focus, button.btn:focus {
   margin: 1em;
 }
 
+.bold {
+  font-weight: bold;
+}
+
 .panel-container {
   margin-top: 1em;
   padding: 1em;
@@ -94,14 +98,18 @@ div.card-header {
   margin-top: 2em;
 }
 
-.bold {
-  font-weight: bold;
+.remove-btm {
   margin-bottom: 0;
 }
 
 .controls {
   overflow: auto;
 }
+
+.extra-ml {
+  margin-left: 1.5em;
+}
+
 /*.visual-options.btn:hover, .visual-options.btn:active {*/
   /*background-color: #0084b4;*/
   /*border: 1px solid #0084b4;*/
