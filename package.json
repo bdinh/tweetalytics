@@ -3,12 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "d3": "^4.11.0",
+    "d3-cloud": "^1.2.4",
+    "d3.layout.cloud": "^1.2.0",
     "fetch": "^1.1.0",
     "jquery": "^3.2.1",
+    "lodash": "^4.17.4",
     "react": "^16.1.1",
     "react-bootstrap": "^0.31.5",
+    "react-d3-cloud": "^0.5.0",
     "react-dom": "^16.1.1",
-    "react-scripts": "1.0.17"
+    "react-fontawesome": "^1.6.1",
+    "react-scripts": "1.0.17",
+    "react-twitter-widgets": "^1.7.1",
+    "sentiment": "^4.1.0",
+    "slick-carousel": "^1.8.1"
   },
   "scripts": {
     "start": "react-scripts start",
