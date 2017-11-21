@@ -83,7 +83,7 @@ div.card-header {
   stroke: black;
 }
 
-.visual-options.btn {
+.visual-options.btn, .bubble-options.btn {
   font-size: 0.5em!important;
   background-color: #00aced;
   border: 1px solid #00aced;
@@ -132,6 +132,23 @@ div.card-header {
 
 .tooltip .name {
   font-weight:bold;
+}
+
+.slick-slider {
+  margin-top: 2em;
+}
+button.slick-arrow.slick-next {
+  right: -5px
+}
+
+button.slick-arrow.slick-prev {
+  left: -5px;
+}
+
+.slick-prev:before, .slick-next:before {
+  color: #00aced!important;
+  font-size: 1em;
+
 }
 
 

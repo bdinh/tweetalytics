@@ -2,20 +2,25 @@ import React, { Component } from 'react';
 import $ from 'jquery';
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import '../node_modules/bootstrap/dist/js/bootstrap.min.js.map';
-import './slick/slick-theme.css';
-import './slick/slick.css';
+import "../node_modules/slick-carousel/slick/slick.css";
+import "../node_modules/slick-carousel/slick/slick-theme.css";
+
 import FontAwesome from 'react-fontawesome';
 import './css/font-awesome/css/font-awesome.css';
 import { bindAll } from 'lodash';
-import { scaleBand, scaleLinear, max, select, selectAll,
-    axisBottom, axisLeft, tickValues, scaleOrdinal,
-    rgb, schemeCategory20, entries, scalePow, forceSimulation,
-    forceX, forceY, forceManyBody, keys, classed, event, json } from 'd3';
+import { scaleBand, scaleLinear, max, select,
+    axisBottom, axisLeft, scaleOrdinal,
+    rgb, scalePow, forceSimulation,
+    forceX, forceY, forceManyBody, keys, event } from 'd3';
 import "./tooltip";
 import { Tweet } from 'react-twitter-widgets';
-import { slick } from 'slick-carousel';
-import {floatingTooltip} from "./tooltip";
+import { floatingTooltip } from "./tooltip";
 import './widget';
+import Slider from "react-slick";
+import Title from './components/title';
+import RadioButton from './components/radiobutton';
+import { extractData } from "./util";
+
 
 let sentiment = require("sentiment");
 
@@ -31,16 +36,16 @@ class App extends Component {
 
         bindAll(this, [
             'createBarChart',
-            'extractData',
             'sentimentAnalysis',
-            'createBubbleChart'
+            'createBubbleChart',
+            'queryTwitter'
         ])
     }
 
     sentimentAnalysis() {
-        let data = this.state.sentimentData;
-        console.log(this.state);
 
+        console.log($(".slick-list"));
+        let data = this.state.sentimentData;
 
         // Retrieves the array of sentiment data returned from the sentiment function
         let sentimentArray = data.map((d) => {
@@ -93,9 +98,6 @@ class App extends Component {
             });
         });
 
-        console.log(positiveTest);
-
-
         // Combine the negative words into one array
         let negativeWords = sentimentArray.reduce((total, next) => {
             return total.concat(next.negative);
@@ -146,14 +148,11 @@ class App extends Component {
             return total + d.score;
         }, 0);
 
-
-
         let wordArray = [];
         Object.keys(wordCount).forEach((word, i) => {
             let insertObj = wordCount[word];
             wordArray.push(insertObj);
         });
-
 
         this.createBubbleChart(resultData);
 
@@ -163,16 +162,16 @@ class App extends Component {
 
     createBubbleChart(data) {
 
+        select('.bubble-chart').remove();
+
         let myBubbleChart  = bubbleChart();
 
         myBubbleChart('.bubble-container', data);
 
-        let testingData = this.state;
-
-
         function bubbleChart() {
+
             let margin = {top: 20, right: 0, bottom: 30, left: 0};
-            let tooltip = floatingTooltip('tweet_tooltip', 80);
+            let tooltip = floatingTooltip('bubble_tooltip', 80);
 
             let containerWidth = parseInt(select(".bubble-container").style("width"));
             let containerHeight = parseInt(select(".bubble-container").style("height"));
@@ -256,9 +255,8 @@ class App extends Component {
 
                 nodes = createNodes(data);
 
-                console.log(nodes);
-
                 svg = select(".bubble-container")
+                    .attr("class", "bubble-chart")
                     .append("svg")
                     .attr('width', width)
                     .attr('height', height);
@@ -274,7 +272,6 @@ class App extends Component {
                     .attr('stroke-width', 2)
                     .on('mouseover', showTooltip)
                     .on('mouseout', hideTooltip);
-
                 bubbles = bubbles.merge(bubblesEnter);
 
                 bubbles.transition()
@@ -348,9 +345,6 @@ class App extends Component {
 
                 tooltip.showTooltip(tooltipContent, event);
 
-                let htmlString = '<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Sunsets don&#39;t get much better than this one over <a href="https://twitter.com/GrandTetonNPS?ref_src=twsrc%5Etfw">@GrandTetonNPS</a>. <a href="https://twitter.com/hashtag/nature?src=hash&amp;ref_src=twsrc%5Etfw">#nature</a> <a href="https://twitter.com/hashtag/sunset?src=hash&amp;ref_src=twsrc%5Etfw">#sunset</a> <a href="http://t.co/YuKy2rcjyU">pic.twitter.com/YuKy2rcjyU</a></p>&mdash; US Department of the Interior (@Interior) <a href="https://twitter.com/Interior/status/463440424141459456?ref_src=twsrc%5Etfw">May 5, 2014</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>';
-
-                let testString = "";
 
                 let queryEmbed = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + d.tweetID;
 
@@ -363,8 +357,10 @@ class App extends Component {
                     .then((data) => {
                         let html = data.html;
                         console.log(html);
-                        $('.tooltip').append(html);
+                        $('#bubble_tooltip').append(html);
                     })
+
+
 
 
                 // $('.tooltip').append(htmlString);
@@ -402,33 +398,42 @@ class App extends Component {
     }
 
 
-
-
-
     createBarChart(type) {
 
+        // Removes the content of the svg prior to creating a new bar chart
         select('.barchart-container').remove();
+        select('#barchart_tooltip').remove();
 
-        let data =this.state.visualizationData;
+        // Stores the data locally in order to prevent the need of passing data all the way down to
+        // child components
+        let data = this.state.visualizationData;
 
+        let tooltip = floatingTooltip('barchart_tooltip', 80);
+
+         // Sets margin for the chart with respect to the container
         let margin = {top: 20, right: 0, bottom: 30, left: 40};
 
+        // Figure out the container size for the panel in order to create our bar chart with the correct size
         let containerWidth = parseInt(select(".visualization-container").style("width"));
         let containerHeight = parseInt(select(".visualization-container").style("height"));
 
+        // Sets the size for the svg that the bar chart will render in
         let width = containerWidth - margin.left - margin.right - 40;
         let height = containerHeight - margin.top - margin.bottom - 40;
 
+        // Sets the scale for the axis of our bar chart
         let x0 = scaleBand().range([0, width - margin.right]).padding(0.1);
         let y = scaleLinear().range([height, 0]);
 
-
+        // Sets the domain of our scale
         x0.domain(data.map((d) => {
             return d.user.name;
         }));
 
+        // To adjust the positioning of our bar chart based on the type displayed
         let transformY = type === "Both" ? 10 : 0;
 
+        // Creates our svg canvas that our svg elements will render within
         let svg = select(".visualization-container").append("svg")
             .attr('class', 'barchart-container')
             .attr("width", width + margin.right + margin.left)
@@ -437,36 +442,44 @@ class App extends Component {
             .attr("transform",
                 "translate(" + margin.left + "," + transformY + ")");
 
-        let z = scaleOrdinal().range(["#1dcaff", "#c0deed"]);
+        // Sets our color scale for the type of barchart to get displayed
+        let colorScale = scaleOrdinal().domain(["Retweet Count", "Favorite Count"]).range(["#1dcaff", "#c0deed"]);
 
+        // Test the type currently being displayed and re-renders plot accordingly
         if (type === "Both") {
+
+            // Creates the second scale for the grouped bars within our bar chart
             let x1 = scaleBand();
+
+            // Stores the keys of our nested data in order to be able to access it easier
             let keys = Object.keys(data[0].tweet.plotData);
 
+            // Sets up the domain for our scales (x1: scales the grouped data, y: scales the retweet/favorite counts)
             x1.domain(keys).rangeRound([0, x0.bandwidth()]);
             y.domain([0, max(data, (d) => { return max(keys, (key) => { return d.tweet.plotData[key]; }); })]).nice();
 
+            // This is where the major binding of our data and the svg elements are done
             svg.append("g")
                 .selectAll("g")
                 .data(data)
                 .enter().append("g")
                 .attr("transform", (d) => { return "translate(" + x0(d.user.name) + ",0)"; })
                 .selectAll("rect")
-                .data((d) => { return keys.map((key) => { return {key: key, value: d.tweet.plotData[key]}; }); })
+                .data((d) => { return keys.map((key) => {
+                    return {key: key, value: d.tweet.plotData[key], tweetID: d.tweet.id_str
+                }; }); })
                 .enter().append("rect")
                 .attr("x", (d) => { return x1(d.key); })
                 .attr("y", (d) => { return y(d.value); })
                 .attr("width", x1.bandwidth())
                 .attr("height", (d) => { return height - y(d.value); })
-                .attr("fill", (d) => { return z(d.key); })
-                .on("mouseover", function(d) {
-                    select(this).style("fill", rgb(z(d.key)).darker(2));
-                })
-                .on("mouseout", function(d) {
-                    select(this).style("fill", z(d.key));
-                });
+                .attr("fill", (d) => { return colorScale(d.key); })
+                .on("mouseover", showTooltip)
+                .on("mouseout", hideTooltip)
+                .on("click", insertTweet);
 
         } else {
+            // Stores a string in order to access our nested mapped data to set our new y domain
             let accessString = "";
             if (type === "Retweets") {
                 accessString = "Retweet Count";
@@ -476,8 +489,10 @@ class App extends Component {
                 y.domain([0, max(data, (d) => { return d.tweet.plotData[accessString]})]);
             }
 
+            // Sets the color based on the type being displayed
             let color = type === "Retweets" ? "#1dcaff" : "#c0deed";
 
+            // Binds the data for a simple bar chart
             svg.selectAll(".bar")
                 .data(data)
                 .enter().append("rect")
@@ -488,26 +503,24 @@ class App extends Component {
                 .attr("y", (d) => { return y(d.tweet.plotData[accessString])})
                 .attr("height", (d) => { return height - y(d.tweet.plotData[accessString])})
                 .attr("fill", color)
-                .on("mouseover", function() {
-                    select(this).style("fill", rgb(color).darker(2));
-                })
-                .on("mouseout", function() {
-                    select(this).style("fill", color);
-                });
+                .on("mouseover", showTooltip)
+                .on("mouseout", hideTooltip);
         }
 
-        svg.append("g")
-            .attr("class", "x-axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(axisBottom(x0))
-            .selectAll(".tick text")
-            .call(wrap, x0.bandwidth());
+            // Draws the x axis labels
+            svg.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(axisBottom(x0))
+                .selectAll(".tick text")
+                .call(wrap, x0.bandwidth());
 
-        svg.append("g")
-            .attr("class", "y-axis")
-            .call(axisLeft(y));
+            // Draws the y axis labels
+            svg.append("g")
+                .attr("class", "y-axis")
+                .call(axisLeft(y));
 
-
+        // Function that wraps the x axis labels based on this Mike Bostock's example: https://bl.ocks.org/mbostock/7555321
         function wrap(text, width) {
             text.each(function() {
                 let text = select(this),
@@ -532,148 +545,146 @@ class App extends Component {
             });
         }
 
+        function insertTweet(d) {
+            let carousel = $(".slick-list");
+
+            let tweetID = type === "Both" ? d.tweetID : d.tweet.id_str;
+            let queryEmbed = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + tweetID;
+
+            fetch(queryEmbed)
+                .then((response) => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                })
+                .then((data) => {
+                    let html = data.html;
+                    $('.slick-track').append(html);
+                });
+
+
+        }
+
+        function showTooltip(d) {
+            if (type === "Both") {
+                select(this).style("fill", rgb(colorScale(d.key)).darker(2));
+            } else {
+                let color = type === "Retweets" ? "#1dcaff" : "#c0deed";
+                select(this).style("fill", rgb(color).darker(2));
+            }
+
+            tooltip.showTooltip("", event);
+
+            let tweetID = type === "Both" ? d.tweetID : d.tweet.id_str;
+            let queryEmbed = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + tweetID;
+
+            fetch(queryEmbed)
+                .then((response) => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                })
+                .then((data) => {
+                    let html = data.html;
+                    $('#barchart_tooltip').append(html);
+                });
+
+        }
+
+        function hideTooltip(d) {
+            if (type === "Both") {
+                select(this).style("fill", colorScale(d.key))
+            } else {
+                let color = type === "Retweets" ? "#1dcaff" : "#c0deed";
+                select(this).style("fill", color);
+            }
+            tooltip.hideTooltip();
+        }
+
     }
 
     componentDidMount() {
-        let baseURL = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php";
-        let sentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=mixed&count=100";
-        let testSentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-sentiment-data.php";
+        // let baseURL = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php";
+        // let sentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=mixed&count=100";
+        // let testSentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-sentiment-data.php";
+        //
+        // fetch(testSentimentQuery)
+        //     .then((response) => {
+        //         return response.json()
+        //     })
+        //     .then((data) => {
+        //         // console.log(data);
+        //         let parsedTweet = this.extractData(data.statuses, "sentiment");
+        //         this.setState({
+        //             sentimentData: parsedTweet
+        //         });
+        //     });
+        //
+        // let visualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=popular&count=10";
+        // let testVisualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-visualization-data.php";
+        //
+        // fetch(testVisualizationQuery)
+        //     .then( (response) => { return response.json() })
+        //     .then( (data) => {
+        //         let parsedTweet = this.extractData(data.statuses, "visualization");
+        //         let tweetHTML = [];
+        //         parsedTweet.map((tweet) => {
+        //             let queryEmbed = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + tweet.tweet.id_str;
+        //             fetch(queryEmbed)
+        //                 .then((response) => {
+        //                     if (response.ok) {
+        //                         return response.json();
+        //                     }
+        //                 })
+        //                 .then((data) => {
+        //                     let html = data.html;
+        //                     tweetHTML.push(html);
+        //                 });
+        //         });
+        //         this.setState({
+        //             visualizationData: parsedTweet,
+        //             tweetHTML: tweetHTML,
+        //         });
+        //     });
+    }
 
-        fetch(testSentimentQuery)
+
+    queryTwitter(url, type) {
+        fetch(url)
             .then((response) => {
-                return response.json()
+                if (response.ok) {
+                    return response.json();
+                }
             })
             .then((data) => {
-                // console.log(data);
-                let parsedTweet = this.extractData(data.statuses, "sentiment");
-                this.setState({
-                    sentimentData: parsedTweet
-                });
-
+                let parsedTweet = extractData(data.statuses, type);
                 console.log(parsedTweet);
-                // this.state.tweetHTML = {};
-
-                // parsedTweet.map((tweet) => {
-                //     let embededTweetURL =
-                //         "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + "931697384278675456";
-                //     fetch(embededTweetURL)
-                //         .then((response) => {
-                //             if (response.ok) {
-                //                 return response.json();
-                //             }
-                //         })
-                //         .then((data) => {
-                //             console.log(data);
-                //             embededTweetDictionary["931697384278675456"] = data.html;
-                //         })
-                //         .catch((error) => {
-                //         });
-                // });
-
-                // this.setState({
-                //     tweetHTML: embededTweetDictionary
-                // });
-
-            });
-
-        let visualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=popular&count=10";
-        let testVisualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-visualization-data.php";
-
-        fetch(testVisualizationQuery)
-            .then( (response) => { return response.json() })
-            .then( (data) => {
-                console.log(data);
-                let parsedTweet = this.extractData(data.statuses, "visualization");
-                this.setState({
-                    visualizationData: parsedTweet,
-                });
-            });
-
-        // Query HTML string embed tweet
-
-
-
+                if (type === 'sentiment') {
+                    this.setState({
+                        sentimentData: parsedTweet
+                    })
+                } else {
+                    this.setState({
+                        visualizationData: parsedTweet
+                    })
+                }
+            })
 
     }
 
-    extractData(data, type) {
-
-        let result = [];
-
-        if (type === "sentiment") {
-            data.forEach((tweet) => {
-                result.push({
-                    text: tweet.text,
-                    tweetID: tweet.id_str,
-                });
-            });
-        } else {
-            data.forEach((tweet) => {
-                let tweetObj = {
-                    user: {
-                        id: tweet.id_str,
-                        name: tweet.user.name,
-                        description: tweet.user.description
-                    },
-                    tweet: {
-                        id_str: tweet.id_str,
-                        text: tweet.text,
-                        type: tweet.metadata.result_type,
-                        url: function () {
-                            let url = "Not Available";
-
-                            if (tweet.user.url !== undefined && tweet.user.url !== null) {
-                                // console.log("first");
-                                url = tweet.user.url;
-                            } else if (tweet.entities.urls.length !== 0) {
-                                //     console.log("second");
-                                if (tweet.entities.urls[0].url !== undefined && tweet.entities.urls[0].url !== null) {
-                                    url = tweet.entities.urls[0].url;
-                                }
-                            } else if (tweet.retweeted_status !== undefined && tweet.retweeted_status !== null) {
-                                if (tweet.retweeted_status.entities.urls.length !== 0) {
-                                    url = tweet.retweeted_status.entities.urls[0].url;
-                                } else {
-                                    if (tweet.retweeted_status.extended_entities !== undefined && tweet.retweeted_status.extended_entities !== null) {
-                                        if (tweet.retweeted_status.extended_entities.media !== undefined && tweet.retweeted_status.extended_entities.media !== null) {
-                                            url = tweet.retweeted_status.extended_entities.media[0].url;
-                                        }
-                                    }
-
-                                }
-                            } else if (tweet.user.entities.url !== undefined && tweet.user.entities.url !== null) {
-                                if (tweet.user.entities.url.urls.length !== 0) {
-                                    url = tweet.user.entities.url.urls[0].url;
-                                }
-                            }
-                            return url;
-                        }(),
-                        plotData: {
-                            'Retweet Count': tweet.retweet_count,
-                            'Favorite Count': tweet.favorite_count
-                        }
-                    }
-                };
-                result.push(tweetObj);
-            });
-        }
-        return result;
-    }
 
     render() {
-        
+        console.log("render")
         if (this.state.sentimentData !== null && this.state.visualizationData !== null ) {
-            this.createBarChart("Both");
-            console.log(this.state)
-            this.sentimentAnalysis();
+            // this.createBarChart("Both");
+            // this.sentimentAnalysis();
+            // this.fetch
         }
-        // (this.state.data !== null ? this.createBarChart("Favorites") : console.log("not yet"));
-
         return (
 
             <div className="App container">
                 <Title color={"#0084b4"} fontSize={"2em"} title={"Tweetalytics"}/>
-                <SearchBar/>
+                <SearchBar queryCallback={this.queryTwitter}/>
                 <div className="row panel-container">
                     <AnalyticPanel headerTitle={"Sentiment Analysis"}/>
                     <VisualizationPanel updateVisualCallback={this.createBarChart} headerTitle={"Visualization"}/>
@@ -683,11 +694,7 @@ class App extends Component {
                                 Tweet Carousel
                             </div>
                             <div className="card-body tweet-here">
-                                <div className="tweet-carousel" data-slick={{slidesToShow: 2, slidesToScroll: 2}}>
-                                    {/*<Tweet tweetId={"930184400037449729"} options={{*/}
-                                        <blockquote class="twitter-tweet" data-cards="hidden" align="center" data-width="300"><p lang="en" dir="ltr">And you get a break on your golf course too, just like Trump will. I know Lots of middle class Americans are looking forward to that</p>&mdash; Prairie Canuck (@kid_prairie) <a href="https://twitter.com/kid_prairie/status/931950137655435264?ref_src=twsrc%5Etfw">November 18, 2017</a></blockquote>
-                                        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-                                </div>
+                                {/*<TweetCarousel data={this.state.tweetHTML}/>*/}
                             </div>
                         </div>
                     </div>
@@ -720,7 +727,6 @@ class AnalyticPanel extends Component {
                             <p className="bold extra-ml">Word Analysis: 100 Tweets</p>
                         </div>
                         <div className="col-md-6 controls bubble-button">
-                            {/*<RadioButton valueArray={["All", "Separated"]}/>*/}
                             <div id="toolbar" className="btn-group btn-container" data-toggle="buttons">
                                 <label className="btn btn-primary small bubble-options">
                                     <input type="radio" name="All" value="All"/> All
@@ -776,49 +782,47 @@ class VisualizationPanel extends Component {
     }
 }
 
-class Title extends Component {
-    constructor(props) {
-        super(props)
-    }
-
-    render() {
-
-    const {
-        color,
-        title,
-        fontSize,
-        bold,
-        section,
-    } = this.props;
-
-    let styleObject = {
-        color: color ? color : "black",
-        fontSize: fontSize ? fontSize : "1em",
-        fontWeight: bold ? "bold" : "normal"
-    };
-
-    let classNames = section ? "remove-btm" : "title";
-
-        return (
-            <div className="container">
-                <p className={classNames} style={styleObject}>{title}</p>
-            </div>
-        );
-    }
-}
 
 class SearchBar extends Component {
     constructor(props) {
-        super(props)
+        super(props);
+        bindAll(this, [
+            'createQuery'
+        ])
+    }
+
+    createQuery(event) {
+        let input = $('.search-bar');
+        let searchTerm = input.val();
+        if (searchTerm.length !== 0) {
+            // Example query: "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=mixed&count=100"
+            let baseURL = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php";
+            let sentimentURL = baseURL + "?searchTerm=" + searchTerm + "&queryType=search/tweets&resultType=mixed&count=100";
+            let visualizationURL = baseURL + "?searchTerm=" + searchTerm +"&queryType=search/tweets&resultType=popular&count=10";
+            this.props.queryCallback(sentimentURL, 'sentiment');
+            // this.props.queryCallback(visualizationURL, 'visualization');
+        }
+    }
+
+    buttonHandling() {
+        let input = $('.search-bar');
+        let searchTerm = input.val();
+        let searchButton = $('.search-button');
+        if (searchTerm.length === 0) {
+            searchButton.prop('disabled', true);
+        } else {
+            searchButton.prop('disabled', false);
+        }
     }
 
     render() {
+
         return (
             <div className="col-md-6 offset-md-3">
                 <div className="search-bar-container">
-                    <input type="text" className="form-control search-bar" placeholder="Search for..." aria-label="Search for..."/>
+                    <input onChange={this.buttonHandling} type="text" className="form-control search-bar" placeholder="Search for..." aria-label="Search for..."/>
                     <span className="input-group-btn">
-                        <button className="btn search-button" type="button">
+                        <button className="btn search-button" type="button" onClick={this.createQuery}>
                             <FontAwesome name={"search"}/>
                         </button>
                     </span>
@@ -828,49 +832,69 @@ class SearchBar extends Component {
     }
 }
 
-// class BarChart extends Component {
-//     constructor(props) {
-//         super(props)
-//     }
-//
-//     render() {
-//         const {
-//             data,
-//         } = this.props;
-//
-//
-//
-//
-//     }
-//
-// }
 
-class RadioButton extends Component {
+class TweetCarousel extends Component {
     constructor(props) {
-        super(props)
+        super(props);
+        this.state = {
+            carouselData: this.props.tweetHTML,
+        }
+    }
+
+    componentDidMount() {
+        // console.log(this.state);
+
+
+    }
+
+    componentWillReceiveProps(nextProps) {
+
+        if (this.props.data !== nextProps.data) {
+
+
+            // console.log(nextProps);
+            this.setState({
+                carouselData: nextProps.data,
+            });
+
+            // tweetHTML.forEach((tweet) => {
+            //     $('.slick-list').append(tweet);
+            // });
+        }
     }
 
     render() {
 
-        const {
-            valueArray,
-            updateVisualCallback,
-        } = this.props;
+            if (this.state.carouselData !== undefined) {
+                let settings = {
+                    accessibility: true,
+                    dots: true,
+                    draggable: true,
+                    swipe: true,
+                    infinite: true,
+                    speed: 500,
+                    slidesToShow: 1,
+                    slidesToScroll: 1
+                };
 
-        return (
-            <div className="btn-group btn-container" data-toggle="buttons">
-                {valueArray.map((value, i) => {
-                    return (<label key={i} className="btn btn-primary small visual-options">
-                        <input type="radio" name={value} value={value} onClick={(event) => {
-                            updateVisualCallback(event.currentTarget.value)
-                        }}/> {value}
-                    </label>)
-                })}
+                // console.log(this.state.carouselData);
+                // console.log(this.props.data)
 
-            </div>
-            );
+                let test = [1,2,3,4,5];
+
+                return(
+                    <div>
+                        {this.state.carouselData.map((tweet, i) => {
+                            return (<div key={i}>
+                                {tweet}
+                            </div>)
+                        })}
+                    </div>
+                );
+            } else {
+                return <h1>Loading...</h1>
+            }
     }
 }
-
 
 export default App;
