@@ -1,4 +1,4 @@
-export function extractData(data, type) {
+export function extractResponse(data, type) {
 
     let result = [];
 

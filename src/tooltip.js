@@ -1,32 +1,32 @@
+/* Tooltip inspired by Jim Vallandingham
+ * http://vallandingham.me/
+ */
+
 import { select } from 'd3';
 /*
  * Creates tooltip with provided id that
- * floats on top of visualization.
+ * floats on top of visualizations.
  * Most styling is expected to come from CSS
- * so check out bubble_chart.css for more details.
  */
 export function floatingTooltip(tooltipId, width) {
     // Local variable to hold tooltip div for
     // manipulation in other functions.
-    var tooltip = select('body')
+    let tooltip = select('body')
         .append('div')
         .attr('class', 'tooltip')
         .attr('id', tooltipId)
         .style('pointer-events', 'none');
 
     // Set a width if it is provided.
-    if (width) {
-        tooltip.style('width', width);
-    }
+    tooltip.style('width', width);
+
 
     // Initially it is hidden.
     hideTooltip();
 
     /*
-     * Display tooltip with provided content.
-     *
+     * Display tooltip with provided content
      * content is expected to be HTML string.
-     *
      * event is d3.event for positioning.
      */
     function showTooltip(content, event) {
@@ -54,28 +54,28 @@ export function floatingTooltip(tooltipId, width) {
         let tooltipWidth = tooltip.style('width');
         let tooltipHeight = tooltip.style('height');
 
-        let wscrY = window.scrollY;
-        let wscrX = window.scrollX;
+        let windowScrollY = window.scrollY;
+        let windowScrollX = window.scrollX;
 
-        let curX = (document.all) ? event.clientX + wscrX : event.pageX;
-        let curY = (document.all) ? event.clientY + wscrY : event.pageY;
-        let ttleft = ((curX - wscrX + xOffset * 2 + tooltipWidth) > window.innerWidth) ?
-            curX - tooltipWidth - xOffset * 2 : curX + xOffset;
+        let currentX = (document.all) ? event.clientX + windowScrollX : event.pageX;
+        let currentY = (document.all) ? event.clientY + windowScrollY : event.pageY;
+        let tooltipLeft = ((currentX - windowScrollX + xOffset * 2 + tooltipWidth) > window.innerWidth) ?
+            currentX - tooltipWidth - xOffset * 2 : currentX + xOffset;
 
-        if (ttleft < wscrX + xOffset) {
-            ttleft = wscrX + xOffset;
+        if (tooltipLeft < windowScrollX + xOffset) {
+            tooltipLeft = windowScrollX + xOffset;
         }
 
-        let tttop = ((curY - wscrY + yOffset * 2 + tooltipHeight) > window.innerHeight) ?
-            curY - tooltipHeight - yOffset * 2 : curY + yOffset;
+        let tooltipTop = ((currentY - windowScrollY + yOffset * 2 + tooltipHeight) > window.innerHeight) ?
+            currentY - tooltipHeight - yOffset * 2 : currentY + yOffset;
 
-        if (tttop < wscrY + yOffset) {
-            tttop = curY + yOffset;
+        if (tooltipTop < windowScrollY + yOffset) {
+            tooltipTop = currentY + yOffset;
         }
 
         tooltip
-            .style('top', tttop + 'px')
-            .style('left', ttleft + 'px');
+            .style('top', tooltipTop + 'px')
+            .style('left', tooltipLeft + 'px');
     }
 
     return {

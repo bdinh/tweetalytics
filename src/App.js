@@ -19,7 +19,7 @@ import './widget';
 import Slider from "react-slick";
 import Title from './components/title';
 import RadioButton from './components/radiobutton';
-import { extractData } from "./util";
+import { extractResponse } from "./util";
 
 
 let sentiment = require("sentiment");
@@ -44,7 +44,6 @@ class App extends Component {
 
     sentimentAnalysis() {
 
-        console.log($(".slick-list"));
         let data = this.state.sentimentData;
 
         // Retrieves the array of sentiment data returned from the sentiment function
@@ -604,25 +603,7 @@ class App extends Component {
     }
 
     componentDidMount() {
-        // let baseURL = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php";
-        // let sentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=mixed&count=100";
-        // let testSentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-sentiment-data.php";
-        //
-        // fetch(testSentimentQuery)
-        //     .then((response) => {
-        //         return response.json()
-        //     })
-        //     .then((data) => {
-        //         // console.log(data);
-        //         let parsedTweet = this.extractData(data.statuses, "sentiment");
-        //         this.setState({
-        //             sentimentData: parsedTweet
-        //         });
-        //     });
-        //
-        // let visualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=popular&count=10";
-        // let testVisualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-visualization-data.php";
-        //
+
         // fetch(testVisualizationQuery)
         //     .then( (response) => { return response.json() })
         //     .then( (data) => {
@@ -657,7 +638,7 @@ class App extends Component {
                 }
             })
             .then((data) => {
-                let parsedTweet = extractData(data.statuses, type);
+                let parsedTweet = extractResponse(data.statuses, type);
                 console.log(parsedTweet);
                 if (type === 'sentiment') {
                     this.setState({
@@ -669,14 +650,13 @@ class App extends Component {
                     })
                 }
             })
-
     }
 
 
     render() {
         console.log("render")
         if (this.state.sentimentData !== null && this.state.visualizationData !== null ) {
-            // this.createBarChart("Both");
+            this.createBarChart("Both");
             // this.sentimentAnalysis();
             // this.fetch
         }
@@ -686,8 +666,8 @@ class App extends Component {
                 <Title color={"#0084b4"} fontSize={"2em"} title={"Tweetalytics"}/>
                 <SearchBar queryCallback={this.queryTwitter}/>
                 <div className="row panel-container">
-                    <AnalyticPanel headerTitle={"Sentiment Analysis"}/>
-                    <VisualizationPanel updateVisualCallback={this.createBarChart} headerTitle={"Visualization"}/>
+                    <AnalyticPanel headerTitle={"Sentiment Analysis Visualization"}/>
+                    <VisualizationPanel updateVisualCallback={this.createBarChart} headerTitle={"Bar Chart Visualization"}/>
                     <div className="col-md-12 panel">
                         <div className="card">
                             <div className="card-header">
@@ -724,7 +704,7 @@ class AnalyticPanel extends Component {
                     </div>
                     <div className="visual-controls row">
                         <div className="col-md-6 controls visual-title">
-                            <p className="bold extra-ml">Word Analysis: 100 Tweets</p>
+                            <p className="bold extra-ml">Recent 100 Tweets</p>
                         </div>
                         <div className="col-md-6 controls bubble-button">
                             <div id="toolbar" className="btn-group btn-container" data-toggle="buttons">
@@ -797,10 +777,16 @@ class SearchBar extends Component {
         if (searchTerm.length !== 0) {
             // Example query: "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=mixed&count=100"
             let baseURL = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php";
-            let sentimentURL = baseURL + "?searchTerm=" + searchTerm + "&queryType=search/tweets&resultType=mixed&count=100";
-            let visualizationURL = baseURL + "?searchTerm=" + searchTerm +"&queryType=search/tweets&resultType=popular&count=10";
-            this.props.queryCallback(sentimentURL, 'sentiment');
-            // this.props.queryCallback(visualizationURL, 'visualization');
+            let sentimentQuery = baseURL + "?searchTerm=" + searchTerm + "&queryType=search/tweets&resultType=mixed&count=100";
+            let visualizationQuery = baseURL + "?searchTerm=" + searchTerm +"&queryType=search/tweets&resultType=popular&count=10";
+
+            // Testing queries to my proxies that doesn't request data from twitter
+            let testSentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-sentiment-data.php";
+            let testVisualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-visualization-data.php";
+
+
+            this.props.queryCallback(testSentimentQuery, 'sentiment');
+            this.props.queryCallback(testVisualizationQuery, 'visualization');
         }
     }
 
