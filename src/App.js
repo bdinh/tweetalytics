@@ -19,6 +19,7 @@ import './widget';
 import Slider from "react-slick";
 import Title from './components/title';
 import RadioButton from './components/radiobutton';
+import VisualizationPanel from './components/visualizationpanel';
 import { extractResponse } from "./util";
 
 
@@ -32,6 +33,8 @@ class App extends Component {
             sentimentData: null,
             visualizationData: null,
             tweetHTML: null,
+            bubbleActive: false,
+            barchartActive: false
         };
 
         bindAll(this, [
@@ -400,7 +403,7 @@ class App extends Component {
     createBarChart(type) {
 
         // Removes the content of the svg prior to creating a new bar chart
-        select('.barchart-container').remove();
+        select('.bar-chart').remove();
         select('#barchart_tooltip').remove();
 
         // Stores the data locally in order to prevent the need of passing data all the way down to
@@ -413,8 +416,8 @@ class App extends Component {
         let margin = {top: 20, right: 0, bottom: 30, left: 40};
 
         // Figure out the container size for the panel in order to create our bar chart with the correct size
-        let containerWidth = parseInt(select(".visualization-container").style("width"));
-        let containerHeight = parseInt(select(".visualization-container").style("height"));
+        let containerWidth = parseInt(select(".barchart-container").style("width"));
+        let containerHeight = parseInt(select(".barchart-container").style("height"));
 
         // Sets the size for the svg that the bar chart will render in
         let width = containerWidth - margin.left - margin.right - 40;
@@ -433,8 +436,8 @@ class App extends Component {
         let transformY = type === "Both" ? 10 : 0;
 
         // Creates our svg canvas that our svg elements will render within
-        let svg = select(".visualization-container").append("svg")
-            .attr('class', 'barchart-container')
+        let svg = select(".barchart-container").append("svg")
+            .attr('class', 'bar-chart')
             .attr("width", width + margin.right + margin.left)
             .attr("height", height + margin.bottom + margin.top)
             .append("g")
@@ -666,8 +669,19 @@ class App extends Component {
                 <Title color={"#0084b4"} fontSize={"2em"} title={"Tweetalytics"}/>
                 <SearchBar queryCallback={this.queryTwitter}/>
                 <div className="row panel-container">
-                    <AnalyticPanel headerTitle={"Sentiment Analysis Visualization"}/>
-                    <VisualizationPanel updateVisualCallback={this.createBarChart} headerTitle={"Bar Chart Visualization"}/>
+                    <VisualizationPanel
+                        classes={"bubble-container"}
+                        headerTitle={"Sentiment Analysis Visualization"}
+                        subTitle={"Recent 100 Tweets"}
+                        type={"bubblechart"}
+                    />
+                    <VisualizationPanel
+                        classes={"barchart-container"}
+                        headerTitle={"Bar Chart Visualization"}
+                        subTitle={"Top 10 Tweets"}
+                        type={"barchart"}
+                        updateVisualCallback={this.createBarChart}
+                    />
                     <div className="col-md-12 panel">
                         <div className="card">
                             <div className="card-header">
@@ -684,84 +698,6 @@ class App extends Component {
         );
     }
 }
-
-class AnalyticPanel extends Component {
-    constructor(props) {
-        super(props)
-    }
-
-    render() {
-
-        const {
-            headerTitle,
-        } = this.props;
-
-        return(
-            <div className="col-md-6 panel">
-                <div className="card">
-                    <div className="card-header">
-                        <Title title={headerTitle} section bold/>
-                    </div>
-                    <div className="visual-controls row">
-                        <div className="col-md-6 controls visual-title">
-                            <p className="bold extra-ml">Recent 100 Tweets</p>
-                        </div>
-                        <div className="col-md-6 controls bubble-button">
-                            <div id="toolbar" className="btn-group btn-container" data-toggle="buttons">
-                                <label className="btn btn-primary small bubble-options">
-                                    <input type="radio" name="All" value="All"/> All
-                                </label>
-                                <label className="btn btn-primary small bubble-options">
-                                    <input type="radio" name="Separated" value="Separated"/> Separated
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="card-body bubble-container">
-
-                    </div>
-                </div>
-            </div>
-        );
-    }
-}
-
-
-class VisualizationPanel extends Component {
-    constructor(props) {
-        super(props)
-    }
-
-    render() {
-
-        const {
-            headerTitle,
-            updateVisualCallback,
-        } = this.props;
-
-        return(
-            <div className="col-md-6 panel">
-                <div className="card">
-                    <div className="card-header">
-                        <Title title={headerTitle} section bold/>
-                    </div>
-                    <div className="visual-controls row">
-                        <div className="col-md-6 controls">
-                            <p className="bold">Top 10 Tweets</p>
-                        </div>
-                        <div className="col-md-6 controls">
-                            <RadioButton updateVisualCallback={updateVisualCallback} valueArray={["Both", "Retweets", "Favorites"]}/>
-                        </div>
-                    </div>
-                    <div className="card-body visualization-container">
-
-                    </div>
-                </div>
-            </div>
-        );
-    }
-}
-
 
 class SearchBar extends Component {
     constructor(props) {
