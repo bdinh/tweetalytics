@@ -11,12 +11,11 @@ export default class VisualizationPanel extends Component {
     render() {
 
         const {
-            classes,
+            active,
             headerTitle,
             subTitle,
             type,
             updateVisualCallback
-
         } = this.props;
 
         function createButtons() {
@@ -38,23 +37,39 @@ export default class VisualizationPanel extends Component {
             }
         }
 
+        function displayActive() {
+            if (active) {
+                return (
+                    <div>
+                        <div className="visual-controls row">
+                            <div className="col-md-6 controls visual-title">
+                                <p className="bold extra-ml">{subTitle}</p>
+                            </div>
+                            <div className="col-md-6 controls">
+                                {createButtons()}
+                            </div>
+                        </div>
+                        <div className={type === 'barchart' ? 'card-body barchart-container' : 'card-body bubble-container'}>
+                        </div>
+                    </div>
+
+            )
+            } else {
+                return (
+                    <div className={"no-data-container"}>
+                        <p className={"no-data"}>No Data Available</p>
+                    </div>
+                )
+            }
+        }
+
         return(
             <div className="col-md-6 panel">
                 <div className="card">
                     <div className="card-header">
                         <Title title={headerTitle} section bold/>
                     </div>
-                    <div className="visual-controls row">
-                        <div className="col-md-6 controls visual-title">
-                            <p className="bold extra-ml">{subTitle}</p>
-                        </div>
-                        <div className="col-md-6 controls">
-                            {createButtons()}
-                        </div>
-                    </div>
-                    <div className={classNames("card-body", classes)}>
-
-                    </div>
+                    {displayActive()}
                 </div>
             </div>
         );

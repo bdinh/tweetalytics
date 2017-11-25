@@ -155,6 +155,10 @@ button.slick-arrow.slick-prev {
 
 }
 
+.no-data-container {
+  margin: auto;
+  padding-top: 1em;
+}
 
 /*.visual-options.btn:hover, .visual-options.btn:active {*/
   /*background-color: #0084b4;*/

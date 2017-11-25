@@ -258,8 +258,8 @@ class App extends Component {
                 nodes = createNodes(data);
 
                 svg = select(".bubble-container")
-                    .attr("class", "bubble-chart")
                     .append("svg")
+                    .attr("class", "bubble-chart")
                     .attr('width', width)
                     .attr('height', height);
 
@@ -353,17 +353,20 @@ class App extends Component {
                 fetch(queryEmbed)
                     .then((response) => {
                         if (response.ok) {
-                            return response.json();
+                            return response.text();
                         }
                     })
                     .then((data) => {
-                        let html = data.html;
+                        let html = "<p>This Tweet has since been deleted</p>";
+                        try {
+                            let jsonText = JSON.parse(data);
+                            html = jsonText.html;
+                        } catch(error) {
+                            console.log(error)
+                        }
                         console.log(html);
                         $('#bubble_tooltip').append(html);
                     })
-
-
-
 
                 // $('.tooltip').append(htmlString);
 
@@ -645,12 +648,16 @@ class App extends Component {
                 console.log(parsedTweet);
                 if (type === 'sentiment') {
                     this.setState({
-                        sentimentData: parsedTweet
-                    })
+                        sentimentData: parsedTweet,
+                        bubbleActive: true
+                    });
+                    this.sentimentAnalysis();
                 } else {
                     this.setState({
-                        visualizationData: parsedTweet
-                    })
+                        visualizationData: parsedTweet,
+                        barchartActive: true
+                    });
+                    this.createBarChart("Both");
                 }
             })
     }
@@ -659,10 +666,12 @@ class App extends Component {
     render() {
         console.log("render")
         if (this.state.sentimentData !== null && this.state.visualizationData !== null ) {
-            this.createBarChart("Both");
+            // this.createBarChart("Both");
             // this.sentimentAnalysis();
             // this.fetch
         }
+
+
         return (
 
             <div className="App container">
@@ -670,13 +679,13 @@ class App extends Component {
                 <SearchBar queryCallback={this.queryTwitter}/>
                 <div className="row panel-container">
                     <VisualizationPanel
-                        classes={"bubble-container"}
+                        active={this.state.bubbleActive}
                         headerTitle={"Sentiment Analysis Visualization"}
                         subTitle={"Recent 100 Tweets"}
                         type={"bubblechart"}
                     />
                     <VisualizationPanel
-                        classes={"barchart-container"}
+                        active={this.state.barchartActive}
                         headerTitle={"Bar Chart Visualization"}
                         subTitle={"Top 10 Tweets"}
                         type={"barchart"}
