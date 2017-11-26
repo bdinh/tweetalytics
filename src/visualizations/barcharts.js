@@ -36,6 +36,7 @@ export default function createBarChart(data, type) {
         return d.user.name;
     }));
 
+
     // To adjust the positioning of our bar chart based on the type displayed
     let transformY = type === "Both" ? 10 : 0;
 
