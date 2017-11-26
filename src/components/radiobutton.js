@@ -9,6 +9,7 @@ export default class RadioButton extends Component {
     render() {
 
         const {
+            data,
             valueArray,
             updateVisualCallback,
         } = this.props;
@@ -18,7 +19,7 @@ export default class RadioButton extends Component {
                 {valueArray.map((value, i) => {
                     return (<label key={i} className="btn btn-primary small visual-options">
                         <input type="radio" name={value} value={value} onClick={(event) => {
-                            updateVisualCallback(event.currentTarget.value)
+                            updateVisualCallback(data, event.currentTarget.value)
                         }}/> {value}
                     </label>)
                 })}

@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import RadioButton from './radiobutton';
 import Title from './title';
-import classNames from 'classnames';
 
+// Component that serves as a panel and wraps subsequent components within
 export default class VisualizationPanel extends Component {
     constructor(props) {
         super(props)
@@ -12,6 +12,7 @@ export default class VisualizationPanel extends Component {
 
         const {
             active,
+            data,
             headerTitle,
             subTitle,
             type,
@@ -21,7 +22,7 @@ export default class VisualizationPanel extends Component {
         function createButtons() {
             if (type === "barchart") {
                 return (
-                    <RadioButton updateVisualCallback={updateVisualCallback} valueArray={["Both", "Retweets", "Favorites"]}/>
+                    <RadioButton data={data} updateVisualCallback={updateVisualCallback} valueArray={["Both", "Retweets", "Favorites"]}/>
                 );
             } else {
                 return (

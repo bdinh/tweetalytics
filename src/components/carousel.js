@@ -1,12 +1,11 @@
 import React, { Component } from 'react';
-// import "../../node_modules/slick-carousel/slick/slick.css";
-// import "../../node_modules/slick-carousel/slick/slick-theme.css";
 
 import { Carousel } from 'react-responsive-carousel';
 import '../../node_modules/react-responsive-carousel/lib/styles/carousel.min.css';
 let HtmlToReactParser = require('html-to-react').Parser;
 
-
+// With the passed in html string of embed tweets from Twitter, create a carousel
+// showing the tweets
 export default class TweetCarousel extends Component {
     constructor(props) {
         super(props);
@@ -15,12 +14,7 @@ export default class TweetCarousel extends Component {
         }
     }
 
-
-
     componentWillReceiveProps(nextProps) {
-        console.log(this.props.carouselData);
-        console.log(nextProps.carouselData);
-
         if (this.props.carouselData !== nextProps.carouselData) {
 
             console.log(nextProps);
@@ -30,30 +24,16 @@ export default class TweetCarousel extends Component {
         }
     }
 
-
     render() {
-
-        let settings = {
-            accessibility: true,
-            dots: true,
-            draggable: true,
-            swipe: true,
-            infinite: true,
-            speed: 500,
-            slidesToShow: 1,
-            slidesToScroll: 1
-        };
 
         const {
             carouselData,
         } = this.props;
 
-        // console.log(this.props.carouselData);
-
         return (
           <div>
             <Carousel>
-                {this.props.carouselData.map((tweet, i) => {
+                {carouselData.map((tweet, i) => {
                     let htmlToReactParser = new HtmlToReactParser();
                     let reactElement = htmlToReactParser.parse(tweet);
                     return (

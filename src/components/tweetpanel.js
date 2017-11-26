@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import Title from './title';
 import Carousel from './carousel';
 
+// Component that serves as a panel and wraps subsequent components within
 export default class TweetPanel extends Component {
     constructor(props) {
         super(props);
@@ -11,9 +12,6 @@ export default class TweetPanel extends Component {
     }
 
     componentWillReceiveProps(nextProps) {
-        console.log(this.props.carouselData);
-        console.log(nextProps.carouselData);
-
         if (this.props.carouselData !== nextProps.carouselData) {
             this.setState({
                 carouselData: nextProps.carouselData,
@@ -47,7 +45,6 @@ export default class TweetPanel extends Component {
                 )
             }
         }
-
 
         return (
             <div>

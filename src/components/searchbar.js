@@ -4,6 +4,8 @@ import $ from 'jquery';
 import FontAwesome from 'react-fontawesome';
 import '../css/font-awesome/css/font-awesome.css';
 
+// Search bar component that manages the query from the input and updates
+// the data in the application's main component
 export default class SearchBar extends Component {
     constructor(props) {
         super(props);
@@ -19,7 +21,7 @@ export default class SearchBar extends Component {
             // Example query: "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php?searchTerm=Trump&queryType=search/tweets&resultType=mixed&count=100"
             let baseURL = "https://students.washington.edu/bdinh/tweet-react-app/php/query-tweets.php";
             let sentimentQuery = baseURL + "?searchTerm=" + searchTerm + "&queryType=search/tweets&resultType=mixed&count=100";
-            let visualizationQuerygi  = baseURL + "?searchTerm=" + searchTerm +"&queryType=search/tweets&resultType=popular&count=10";
+            let visualizationQuery  = baseURL + "?searchTerm=" + searchTerm +"&queryType=search/tweets&resultType=popular&count=10";
 
             // Testing queries to my proxies that doesn't request data from twitter
             let testSentimentQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-sentiment-data.php";
