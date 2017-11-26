@@ -4,20 +4,18 @@ import '../node_modules/bootstrap/dist/js/bootstrap.min.js.map';
 
 
 import createBarChart from './visualizations/barcharts';
-import createBubbleChart from './visualizations/bubblechart';
 import { bindAll } from 'lodash';
 import { scaleBand, scaleLinear, max, select,
     axisBottom, axisLeft, scaleOrdinal,
     rgb, scalePow, forceSimulation,
     forceX, forceY, forceManyBody, keys, event } from 'd3';
-import "./tooltip";
+import "./js/tooltip";
 import { Tweet } from 'react-twitter-widgets';
 import Title from './components/title';
 import VisualizationPanel from './components/visualizationpanel';
 import SearchBar from './components/searchbar';
 import TweetPanel from './components/tweetpanel';
-import { extractResponse } from "./util";
-let sentiment = require("sentiment");
+import { extractResponse, sentimentAnalysis } from "./js/util";
 
 
 class App extends Component {
@@ -33,126 +31,9 @@ class App extends Component {
         };
 
         bindAll(this, [
-            'sentimentAnalysis',
             'queryTwitter'
         ])
     }
-
-    sentimentAnalysis() {
-
-        let data = this.state.sentimentData;
-
-        // Retrieves the array of sentiment data returned from the sentiment function
-        let sentimentArray = data.map((d) => {
-             return sentiment(d.text)
-        });
-
-        let test = data.map((d) => {
-            return {
-                text: d.text,
-                sentimentObject: sentiment(d.text),
-                tweetID: d.tweetID
-            }
-        });
-
-
-        // Combine the positive words into one array
-        let postiveWords = sentimentArray.reduce((total, next) => {
-            return total.concat(next.positive);
-        }, []);
-
-
-        let positiveTest = [];
-
-        test.forEach((tweet) => {
-            let tweetID = tweet.tweetID;
-            let text = tweet.text;
-            tweet.sentimentObject.positive.forEach((word) => {
-                positiveTest.push({
-                    word: word,
-                    tweetID: tweetID,
-                    text: text
-                });
-            });
-        });
-
-
-
-
-        let negativeTest = [];
-
-        test.forEach((tweet) => {
-            let tweetID = tweet.tweetID;
-            let text = tweet.text;
-            tweet.sentimentObject.negative.forEach((word) => {
-                negativeTest.push({
-                    word: word,
-                    tweetID: tweetID,
-                    text: text
-                });
-            });
-        });
-
-        // Combine the negative words into one array
-        let negativeWords = sentimentArray.reduce((total, next) => {
-            return total.concat(next.negative);
-        }, []);
-
-
-        let wordCount = {};
-
-        // Get a word count for each word
-        positiveTest.map((d) => {
-            if (d.word in wordCount) {
-                wordCount[d.word].value++;
-            } else {
-                wordCount[d.word] = {
-                    name: d.word,
-                    text: d.text,
-                    tweetID: d.tweetID,
-                    value: 1,
-                    type: "Positive"
-                };
-            }
-        });
-
-        negativeTest.map((d) => {
-            if (d.word in wordCount) {
-                wordCount[d.word].value++;
-            } else {
-                wordCount[d.word] = {
-                    name: d.word,
-                    text: d.text,
-                    tweetID: d.tweetID,
-                    value: 1,
-                    type: "Negative"
-                };
-            }
-        });
-
-        let resultData = [];
-
-        Object.keys(wordCount).forEach((word, i) => {
-            let insertObj = wordCount[word];
-            insertObj.id = i + 1;
-            resultData.push(insertObj);
-        });
-
-        // Calculates the Sentiment Score
-        let sentimentScore = sentimentArray.reduce((total, d) => {
-            return total + d.score;
-        }, 0);
-
-        let wordArray = [];
-        Object.keys(wordCount).forEach((word, i) => {
-            let insertObj = wordCount[word];
-            wordArray.push(insertObj);
-        });
-
-        createBubbleChart(resultData);
-
-    }
-
 
     queryTwitter(url, type) {
         fetch(url)
@@ -168,7 +49,7 @@ class App extends Component {
                         sentimentData: parsedTweet,
                         bubbleActive: true
                     });
-                    this.sentimentAnalysis();
+                    sentimentAnalysis(this.state.sentimentData);
                 } else {
 
                     let tweetHTML = [];

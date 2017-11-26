@@ -2,7 +2,7 @@ import { select, scaleBand, scaleLinear, scaleOrdinal,
     max, axisBottom, axisLeft,
     rgb, event } from 'd3';
 import $ from 'jquery';
-import { floatingTooltip } from "../tooltip";
+import { floatingTooltip } from "../js/tooltip";
 
 // Creates D3 simple, and grouped bar charts
 export default function createBarChart(data, type) {
