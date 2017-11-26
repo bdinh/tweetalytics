@@ -170,3 +170,51 @@ button.control-arrow:hover {
 .carousel-status {
   right: 5px!important;
 }
+
+.contact {
+  font-size: 1.5em;
+  text-align: center;
+}
+
+.social-link a {
+  font-size: 1em;
+  color: #ffffff;
+  margin-top: 0.25em;
+  display: inline-block;
+}
+
+.social-link {
+  display: inline-block;
+  background-color: #00aced;
+  height: 2em;
+  width: 2em;
+  border-radius: 50%;
+}
+
+.footer-text {
+  font-size: 1em;
+  margin: auto;
+}
+
+.social-link-container {
+  padding: 0.5em 0 0 0;
+}
+
+.footer {
+  margin-top: 3em;
+  text-align: center;
+  position:relative;
+  bottom:0;
+}
+
+@media (min-width: 598px) {
+  .social-link a {
+    font-size: 1.5em;
+    margin-top: 0.1em;
+  }
+
+  .social-link {
+    height: 2.5em;
+    width: 2.5em;
+  }
+}

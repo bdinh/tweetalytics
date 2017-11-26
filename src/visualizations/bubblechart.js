@@ -68,10 +68,11 @@ export default function createBubbleChart(data) {
         function createNodes(data) {
 
             let scaleMax = max(data, (d) => { return +d.value; });
+            let bubbleSize = parseInt(containerWidth * 0.05);
 
             let radiusScale = scalePow()
                 .exponent(0.5)
-                .range([2, 20])
+                .range([2, bubbleSize])
                 .domain([0, scaleMax]);
 
             let nodes = data.map((word) => {
@@ -176,12 +177,15 @@ export default function createBubbleChart(data) {
         }
 
         function showTooltip(d) {
+            tooltip.hideTooltip();
+
             select(this).attr('stroke', 'black');
 
             let formattedWord = d.name.charAt(0).toUpperCase() + d.name.slice(1);
 
             let tooltipContent = '<span class="name">Word: </span><span class="value">' +
-                formattedWord  + '</span><br/>' + '<span class="name">Type: </span><span class="value">' + d.group;
+                formattedWord  + '</span><br/>' + '<span class="name">Type: </span><span class="value">' + d.group +
+                '</span><br/>' + '<span class="name"># of Tweet: </span><span class="value">' + d.value;
 
             tooltip.showTooltip(tooltipContent, event);
 
@@ -208,7 +212,11 @@ export default function createBubbleChart(data) {
 
         function hideTooltip(d) {
             select(this).attr('stroke', rgb(fillColor(d.group)).darker());
-            tooltip.hideTooltip();
+            // tooltip.hideTooltip();
+            select('.bubble-container')
+                .on('click', () => {
+                    tooltip.hideTooltip();
+                })
         }
 
         chart.toggleDisplay = (displayName) => {

@@ -28,8 +28,8 @@ export default class SearchBar extends Component {
             let testVisualizationQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-visualization-data.php";
 
 
-            this.props.queryCallback(testSentimentQuery, 'sentiment');
-            this.props.queryCallback(testVisualizationQuery, 'visualization');
+            this.props.queryCallback(sentimentQuery, 'sentiment', searchTerm);
+            this.props.queryCallback(visualizationQuery, 'visualization', searchTerm);
         }
     }
 

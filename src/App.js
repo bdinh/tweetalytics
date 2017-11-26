@@ -1,20 +1,13 @@
 import React, { Component } from 'react';
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import '../node_modules/bootstrap/dist/js/bootstrap.min.js.map';
-
-
 import createBarChart from './visualizations/barcharts';
 import { bindAll } from 'lodash';
-import { scaleBand, scaleLinear, max, select,
-    axisBottom, axisLeft, scaleOrdinal,
-    rgb, scalePow, forceSimulation,
-    forceX, forceY, forceManyBody, keys, event } from 'd3';
-import "./js/tooltip";
-import { Tweet } from 'react-twitter-widgets';
 import Title from './components/title';
 import VisualizationPanel from './components/visualizationpanel';
 import SearchBar from './components/searchbar';
 import TweetPanel from './components/tweetpanel';
+import Footer from './components/footer';
 import { extractResponse, sentimentAnalysis } from "./js/util";
 
 
@@ -28,6 +21,7 @@ class App extends Component {
             bubbleActive: false,
             barchartActive: false,
             carouselActive: false,
+            searchTerm: ""
         };
 
         bindAll(this, [
@@ -35,7 +29,11 @@ class App extends Component {
         ])
     }
 
-    queryTwitter(url, type) {
+    queryTwitter(url, type, searchTerm) {
+        this.setState({
+            searchTerm: searchTerm
+        });
+
         fetch(url)
             .then((response) => {
                 if (response.ok) {
@@ -89,7 +87,6 @@ class App extends Component {
     }
 
     render() {
-
         return (
 
             <div className="App container">
@@ -106,7 +103,7 @@ class App extends Component {
                         active={this.state.barchartActive}
                         data={this.state.visualizationData}
                         headerTitle={"Bar Chart Visualization"}
-                        subTitle={"Top 10 Tweets"}
+                        subTitle={"Top Tweets about " + this.state.searchTerm}
                         type={"barchart"}
                         updateVisualCallback={createBarChart}
                     />
@@ -116,6 +113,7 @@ class App extends Component {
                     headerTitle={"Top 10 Tweets"}
                     carouselData={this.state.tweetHTML}
                 />
+                <Footer/>
             </div>
         );
     }
