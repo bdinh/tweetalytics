@@ -1,16 +1,12 @@
 {
-  "main.css": "static/css/main.7ed551f5.css",
-  "main.css.map": "static/css/main.7ed551f5.css.map",
-  "main.js": "static/js/main.0d87ebd5.js",
-  "main.js.map": "static/js/main.0d87ebd5.js.map",
+  "main.css": "static/css/main.200364b5.css",
+  "main.css.map": "static/css/main.200364b5.css.map",
+  "main.js": "static/js/main.b92f49c6.js",
+  "main.js.map": "static/js/main.b92f49c6.js.map",
   "static/media/bootstrap.min.js.map": "static/media/bootstrap.min.js.7a237278.map",
   "static/media/fontawesome-webfont.eot": "static/media/fontawesome-webfont.674f50d2.eot",
   "static/media/fontawesome-webfont.svg?v=4.7.0": "static/media/fontawesome-webfont.912ec66d.svg",
   "static/media/fontawesome-webfont.ttf?v=4.7.0": "static/media/fontawesome-webfont.b06871f2.ttf",
   "static/media/fontawesome-webfont.woff2?v=4.7.0": "static/media/fontawesome-webfont.af7ae505.woff2",
-  "static/media/fontawesome-webfont.woff?v=4.7.0": "static/media/fontawesome-webfont.fee66e71.woff",
-  "static/media/slick.eot": "static/media/slick.ced611da.eot",
-  "static/media/slick.svg": "static/media/slick.f97e3bbf.svg",
-  "static/media/slick.ttf": "static/media/slick.d41f55a7.ttf",
-  "static/media/slick.woff": "static/media/slick.b7c9e1e4.woff"
+  "static/media/fontawesome-webfont.woff?v=4.7.0": "static/media/fontawesome-webfont.fee66e71.woff"
 }
