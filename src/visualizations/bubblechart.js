@@ -2,7 +2,7 @@ import $ from 'jquery';
 import { select, forceSimulation, max, scaleOrdinal,
     forceX, forceY, forceManyBody, keys, event,
     rgb, scalePow } from 'd3';
-import { floatingTooltip } from "../tooltip";
+import { floatingTooltip } from "../js/tooltip";
 
 
 export default function createBubbleChart(data) {
@@ -181,10 +181,9 @@ export default function createBubbleChart(data) {
             let formattedWord = d.name.charAt(0).toUpperCase() + d.name.slice(1);
 
             let tooltipContent = '<span class="name">Word: </span><span class="value">' +
-                formattedWord  + '</span><br/>' + '<span class="name">ID: </span><span class="value">' + d.tweetID;
+                formattedWord  + '</span><br/>' + '<span class="name">Type: </span><span class="value">' + d.group;
 
             tooltip.showTooltip(tooltipContent, event);
-
 
             let queryEmbed = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + d.tweetID;
 
