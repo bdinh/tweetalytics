@@ -2,8 +2,6 @@ import React, { Component } from 'react';
 import $ from 'jquery';
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import '../node_modules/bootstrap/dist/js/bootstrap.min.js.map';
-import "../node_modules/slick-carousel/slick/slick.css";
-import "../node_modules/slick-carousel/slick/slick-theme.css";
 
 import { bindAll } from 'lodash';
 import { scaleBand, scaleLinear, max, select,
@@ -13,15 +11,15 @@ import { scaleBand, scaleLinear, max, select,
 import "./tooltip";
 import { Tweet } from 'react-twitter-widgets';
 import { floatingTooltip } from "./tooltip";
-import './widget';
-import Slider from "react-slick";
+// import './widget';
 import Title from './components/title';
-import RadioButton from './components/radiobutton';
 import VisualizationPanel from './components/visualizationpanel';
 import SearchBar from './components/searchbar';
+import TweetPanel from './components/tweetpanel';
 import { extractResponse } from "./util";
-
-
+import { Carousel } from 'react-responsive-carousel';
+// import '../node_modules/react-responsive-carousel/lib/styles/carousel.min.css';
+let HtmlToReactParser = require('html-to-react').Parser;
 let sentiment = require("sentiment");
 
 
@@ -33,7 +31,8 @@ class App extends Component {
             visualizationData: null,
             tweetHTML: null,
             bubbleActive: false,
-            barchartActive: false
+            barchartActive: false,
+            carouselActive: false,
         };
 
         bindAll(this, [
@@ -366,9 +365,6 @@ class App extends Component {
                         console.log(html);
                         $('#bubble_tooltip').append(html);
                     })
-
-                // $('.tooltip').append(htmlString);
-
             }
 
             function hideTooltip(d) {
@@ -553,9 +549,9 @@ class App extends Component {
             let carousel = $(".slick-list");
 
             let tweetID = type === "Both" ? d.tweetID : d.tweet.id_str;
-            let queryEmbed = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + tweetID;
+            let embedQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + tweetID;
 
-            fetch(queryEmbed)
+            fetch(embedQuery)
                 .then((response) => {
                     if (response.ok) {
                         return response.json();
@@ -609,6 +605,7 @@ class App extends Component {
 
     componentDidMount() {
 
+
         // fetch(testVisualizationQuery)
         //     .then( (response) => { return response.json() })
         //     .then( (data) => {
@@ -652,24 +649,44 @@ class App extends Component {
                     });
                     this.sentimentAnalysis();
                 } else {
+
+                    let tweetHTML = [];
+                    parsedTweet.map((tweet) => {
+                        let embedQuery = "https://students.washington.edu/bdinh/tweet-react-app/php/query-oembed.php?tweetID=" + tweet.tweet.id_str;
+                        fetch(embedQuery)
+                            .then((response) => {
+                                if (response.ok) {
+                                    return response.text();
+                                }
+                            })
+                            .then((data) => {
+                                try {
+                                    let jsonText = JSON.parse(data);
+                                    let html = jsonText.html;
+                                    let formattedHTML = html.replace("class", "className");
+                                    tweetHTML.push(formattedHTML);
+                                    this.setState({
+                                        tweetHTML: tweetHTML,
+                                        carouselActive: true,
+                                    });
+                                } catch(error) {
+                                    console.log(error)
+                                }
+                            });
+
+                    });
                     this.setState({
                         visualizationData: parsedTweet,
-                        barchartActive: true
+                        tweetHTML: tweetHTML,
+                        barchartActive: true,
+                        carouselActive: true,
                     });
                     this.createBarChart("Both");
                 }
             })
     }
 
-
     render() {
-        console.log("render")
-        if (this.state.sentimentData !== null && this.state.visualizationData !== null ) {
-            // this.createBarChart("Both");
-            // this.sentimentAnalysis();
-            // this.fetch
-        }
-
 
         return (
 
@@ -690,85 +707,14 @@ class App extends Component {
                         type={"barchart"}
                         updateVisualCallback={this.createBarChart}
                     />
-                    <div className="col-md-12 panel">
-                        <div className="card">
-                            <div className="card-header">
-                                Tweet Carousel
-                            </div>
-                            <div className="card-body tweet-here">
-                                {/*<TweetCarousel data={this.state.tweetHTML}/>*/}
-                            </div>
-                        </div>
-                    </div>
                 </div>
-
+                <TweetPanel
+                    active={this.state.carouselActive}
+                    headerTitle={"Top 10 Tweets"}
+                    carouselData={this.state.tweetHTML}
+                />
             </div>
         );
     }
 }
-
-class TweetCarousel extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            carouselData: this.props.tweetHTML,
-        }
-    }
-
-    componentDidMount() {
-        // console.log(this.state);
-
-
-    }
-
-    componentWillReceiveProps(nextProps) {
-
-        if (this.props.data !== nextProps.data) {
-
-
-            // console.log(nextProps);
-            this.setState({
-                carouselData: nextProps.data,
-            });
-
-            // tweetHTML.forEach((tweet) => {
-            //     $('.slick-list').append(tweet);
-            // });
-        }
-    }
-
-    render() {
-
-            if (this.state.carouselData !== undefined) {
-                let settings = {
-                    accessibility: true,
-                    dots: true,
-                    draggable: true,
-                    swipe: true,
-                    infinite: true,
-                    speed: 500,
-                    slidesToShow: 1,
-                    slidesToScroll: 1
-                };
-
-                // console.log(this.state.carouselData);
-                // console.log(this.props.data)
-
-                let test = [1,2,3,4,5];
-
-                return(
-                    <div>
-                        {this.state.carouselData.map((tweet, i) => {
-                            return (<div key={i}>
-                                {tweet}
-                            </div>)
-                        })}
-                    </div>
-                );
-            } else {
-                return <h1>Loading...</h1>
-            }
-    }
-}
-
 export default App;
