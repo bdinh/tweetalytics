@@ -4,8 +4,8 @@ import { select, scaleBand, scaleLinear, scaleOrdinal,
 import $ from 'jquery';
 import { floatingTooltip } from "../tooltip";
 
-
-export default function createBarChart2(data, type) {
+// Creates D3 simple, and grouped bar charts
+export default function createBarChart(data, type) {
     // Removes the content of the svg prior to creating a new bar chart
     select('.bar-chart').remove();
     select('#barchart_tooltip').remove();
