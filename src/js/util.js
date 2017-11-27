@@ -1,6 +1,7 @@
 import createBubbleChart from '../visualizations/bubblechart';
 let sentiment = require("sentiment");
 
+// Util function that returns the data from twitter into a nice array of objects
 export function extractResponse(data, type) {
 
     let result = [];
@@ -62,6 +63,7 @@ export function extractResponse(data, type) {
     return result;
 }
 
+// Util function that returns an object that represents the word bank for the sentiment analysis.
 export function sentimentAnalysis(data) {
 
     let sentimentArray = data.map((d) => {

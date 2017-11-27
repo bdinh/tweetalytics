@@ -1,3 +1,13 @@
+/***
+ * The bubble chart implementation is inspired by Jim Vallandingham
+ * http://vallandingham.me/bubble_charts_with_d3v4.html
+ * Thanks for creating a great tutorial explaining some of the concepts
+ * behind D3 force functions!
+ *
+ * Organization and style inspired by:
+ * https://bost.ocks.org/mike/chart/
+ */
+
 import $ from 'jquery';
 import { select, forceSimulation, max, scaleOrdinal,
     forceX, forceY, forceManyBody, keys, event,
@@ -6,49 +16,76 @@ import { floatingTooltip } from "../js/tooltip";
 
 
 export default function createBubbleChart(data) {
+    // Removes existing bubble chart at the selected container
     select('.bubble-chart').remove();
 
+    // Creates an instance of the bubble chart and loads in the data
     let myBubbleChart  = bubbleChart();
 
-    myBubbleChart('.bubble-container', data);
+    myBubbleChart(data);
 
+    // Returns a function to create a bubble chart given the data
     function bubbleChart() {
 
+        // Sets appropriate margins
         let margin = {top: 20, right: 0, bottom: 30, left: 0};
+
+        // Creates an instance of our tooltip
         let tooltip = floatingTooltip('bubble_tooltip', 80);
 
+        // Stores the dimensions for our container
         let containerWidth = parseInt(select(".bubble-container").style("width"));
         let containerHeight = parseInt(select(".bubble-container").style("height"));
 
+        // Dimensions for the visualization
         let width = containerWidth - margin.left - margin.right - 40;
         let height = containerHeight - margin.top - margin.bottom - 40;
 
+        // Center coordinate for our visualization to be centered on
         let center = { x: width / 2, y: height / 2 };
         let quarterWidth = width / 4;
 
+        // Center coordinate for the grouping of our bubbles
         let groupCenter = {
             Positive: { x: width / 2 - quarterWidth, y: height / 2 },
             Negative: { x: width / 2 + quarterWidth, y: height / 2 },
         };
 
+        // Coordinate for our labels
         let groupTitleX = {
             Positive: width / 2 - quarterWidth - 20,
             Negative: width / 2 + quarterWidth + 20
         };
 
+        // Force strength utilize for our force function
         let forceStrength = 0.03;
 
 
+        // Variables that will be utilize throughout the functions
         let svg = null;
         let bubbles = null;
         let nodes = [];
 
 
+        // Charge function that is called for each node.
+        // As part of the ManyBody force.
+        // This is what creates the repulsion between nodes.
+        //
+        // Charge is proportional to the diameter of the
+        // circle (which is stored in the radius attribute
+        // of the circle's associated data.
+        //
+        // This is done to allow for accurate collision
+        // detection with nodes of different sizes.
+        //
+        // Charge is negative because we want nodes to repel.
         function charge(d) {
             return -Math.pow(d.radius, 2.0) * forceStrength;
         }
 
-
+        // Here we create a force layout,
+        // create a force simulation now and
+        // add forces to it.
         let simulation = forceSimulation()
             .velocityDecay(0.2)
             .force('x', forceX().strength(forceStrength).x(center.x))
@@ -65,6 +102,12 @@ export default function createBubbleChart(data) {
             .domain(['Positive', 'Negative'])
             .range(['#1FADFF', '#FF2A1F']);
 
+        /*
+          * This data manipulation function takes the raw data and
+          * converts it into an array of node objects.
+          * Each node will store data and visualization values to visualize
+          * a bubble.
+          */
         function createNodes(data) {
 
             let scaleMax = max(data, (d) => { return +d.value; });
@@ -96,10 +139,17 @@ export default function createBubbleChart(data) {
             return nodes;
         }
 
+        /*
+         * Main entry point to the bubble chart. This function is returned
+         * by the parent closure. It prepares the data for visualization
+         * and adds an svg element to the provided selector and starts the
+         * visualization creation process.
+         */
         let chart = () => {
 
             nodes = createNodes(data);
 
+            // Creates our container for the visualization
             svg = select(".bubble-container")
                 .append("svg")
                 .attr("class", "bubble-chart")
@@ -109,6 +159,7 @@ export default function createBubbleChart(data) {
             bubbles = svg.selectAll('.bubble')
                 .data(nodes, (d) => { return d.id; });
 
+            // Bind the svg elements to our array of nodes
             let bubblesEnter = bubbles.enter().append('circle')
                 .classed('bubble', true)
                 .attr('r', 0)
@@ -119,6 +170,7 @@ export default function createBubbleChart(data) {
                 .on('mouseout', hideTooltip);
             bubbles = bubbles.merge(bubblesEnter);
 
+            // Fancy initial transition
             bubbles.transition()
                 .duration(2000)
                 .attr('r', (d) => { return d.radius; });
@@ -128,41 +180,50 @@ export default function createBubbleChart(data) {
             groupBubbles();
         };
 
+        /*
+         * Callback function that is called after every tick of the
+         * force simulation.
+         * Here we do the acutal repositioning of the SVG circles
+         * based on the current x and y values of their bound node data.
+         * These x and y values are modified by the force simulation.
+         */
         function ticked() {
             bubbles
                 .attr('cx', (d) => { return d.x; })
                 .attr('cy', (d) => { return d.y; });
         }
 
+
+        // Provides a x value for each node to be used with the split by group x force.
         function nodeGroupPosition(d) {
             return groupCenter[d.group].x;
         }
 
 
+        // Brings the bubbles together
         function groupBubbles() {
             hideGroupTitles();
-            // @v4 Reset the 'x' force to draw the bubbles to the center.
             simulation.force('x', forceX().strength(forceStrength).x(center.x));
 
-            // @v4 We can reset the alpha value and restart the simulation
             simulation.alpha(1).restart();
         }
 
+        // Splits the bubbles in their corresponding groups
         function splitBubbles() {
 
             showGroupTitles();
 
-            // @v4 Reset the 'x' force to draw the bubbles to their year centers
             simulation.force('x', forceX().strength(forceStrength).x(nodeGroupPosition));
 
-            // @v4 We can reset the alpha value and restart the simulation
             simulation.alpha(1).restart();
         }
 
+        // Hide the titles of the group when the bubbles need to be split
         function hideGroupTitles() {
             svg.selectAll('.group').remove()
         }
 
+        // Show the titles of the group when the bubbles need to be split
         function showGroupTitles() {
             let groupData = keys(groupTitleX);
             let groups = svg.selectAll(".group")
@@ -176,6 +237,7 @@ export default function createBubbleChart(data) {
                 .text(function (d) { return d; });
         }
 
+        // Shows the tooltip that embed the tweet and relevent information inside
         function showTooltip(d) {
             tooltip.hideTooltip();
 
@@ -210,6 +272,7 @@ export default function createBubbleChart(data) {
                 })
         }
 
+        // Hides the tooltip
         function hideTooltip(d) {
             select(this).attr('stroke', rgb(fillColor(d.group)).darker());
             // tooltip.hideTooltip();
@@ -219,6 +282,7 @@ export default function createBubbleChart(data) {
                 })
         }
 
+        // Checks the state of the button and displays the correct version of the bar chart
         chart.toggleDisplay = (displayName) => {
             if (displayName === 'Separated') {
                 splitBubbles();
@@ -229,8 +293,10 @@ export default function createBubbleChart(data) {
         return chart;
     }
 
+
     setupButtons();
 
+    // Add event handler to our buttons in order to alter the state of the visualization
     function setupButtons() {
         $('#toolbar')
             .children('.btn')

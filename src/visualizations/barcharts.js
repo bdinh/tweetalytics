@@ -1,3 +1,9 @@
+/***
+ * D3 Barchart inspired by https://bl.ocks.org/mbostock/3885304
+ * Although I've worked with D3 quite a lot this summer at my internship,
+ * the core foundation of the bar chart resides from Mike Bostock's example.
+ */
+
 import { select, scaleBand, scaleLinear, scaleOrdinal,
     max, axisBottom, axisLeft,
     rgb, event } from 'd3';
