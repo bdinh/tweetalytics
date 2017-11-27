@@ -1,4 +1,6 @@
 <?php
+header("Access-Control-Allow-Origin: *");
+
 // Loads TwitterOAuth library created by Abraham Williams.
 require "twitteroauth/autoload.php";
 use Abraham\TwitterOAuth\TwitterOAuth;
@@ -18,14 +20,15 @@ $connection = new TwitterOAuth($consumerKey, $consumerSecret, $oAuthToken, $oAut
 // Makes appropriate Twitter API request based on a given parameter.
 if ($type == "search/tweets") {
     $searchTerm = $_GET['searchTerm'];
-    $statuses = $connection->get("search/tweets", ["q" => $searchTerm, "result_type" => "popular", "count" => 100]);
-    print json_encode("hello");
+    $resultType = $_GET['resultType'];
+    $count = $_GET['count'];
+    $statuses = $connection->get("search/tweets", ["q" => $searchTerm, "result_type" => $resultType, "count" => $count, "lang" => "en"]);
+    print json_encode($statuses);
 } else if ($type == "statuses/oembed") {
     $tweetId = $_GET['tweetId'];
-    $tweetUrl = $_GET['tweetUrl'];
-    $statuses = $connection->get("statuses/oembed", ["id" => $tweetId, "url" => $tweetUrl,"maxwidth" => 350,
+    $statuses = $connection->get("statuses/oembed", ["id" => $tweetId,"maxwidth" => 250,
         "align" => "center", "hide_media" => "true"]);
-    print json_encode("hello");
+    print json_encode($statuses);
 }
 
 
