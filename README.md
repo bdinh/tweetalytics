@@ -24,4 +24,4 @@ showcase some of the new skills that I've learned.
 
  
 
-The site can be viewed at [here](https://info343b-a17.github.io/data-explorer-bdinh/)
+The site can be viewed at [here](https://bdinh.github.io/tweetalytics/)
