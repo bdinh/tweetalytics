@@ -2,7 +2,7 @@
   "name": "data-explorer-bdinh",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://info343b-a17.github.io/data-explorer-bdinh/",
+  "homepage": "https://bdinh.github.io/tweetalytics/",
   "dependencies": {
     "d3": "^4.11.0",
     "d3-cloud": "^1.2.4",
